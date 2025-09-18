@@ -1,0 +1,43 @@
+1. Buying Conditions (Long Setup)
+
+✅ A “︽” Buy Signal appears from FVG Order Blocks [BigBeluga].
+✅ Signal candle lies inside:
+
+A bullish FVG zone, OR
+
+A bullish Order Block zone (Sonarlab OB).
+✅ Entry → Enter on the close of the signal candle or next open.
+
+🎯 Take Profit (TP):
+
+Conservative: +2% from entry price.
+
+Aggressive: +3% from entry price.
+
+🛑 Stop Loss (SL):
+
+Set 0.1% below the OB boundary where the signal appeared.
+
+Example: OB low = 1500 → SL = 1498.5
+
+2. Selling Conditions (Short Setup)
+
+✅ A “﹀” Sell Signal appears from FVG Order Blocks [BigBeluga].
+✅ Signal candle lies inside:
+
+A bearish FVG zone, OR
+
+A bearish Order Block zone (Sonarlab OB).
+✅ Entry → Enter on the close of the signal candle or next open.
+
+🎯 Take Profit (TP):
+
+Conservative: -2% from entry price.
+
+Aggressive: -3% from entry price.
+
+🛑 Stop Loss (SL):
+
+Set 0.1% above the OB boundary where the signal appeared.
+
+Example: OB high = 1560 → SL = 1561.6
