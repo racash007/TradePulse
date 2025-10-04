@@ -1,0 +1,863 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CsvFileAttributes">
+    <option name="attributeMap">
+      <map>
+        <entry key="\resource\Data\07-03-2025-TO-07-09-2025-ABB-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ABB-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ABCAPITAL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ADANIENSOL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ADANIENT-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ADANIGREEN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ADANIPORTS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ALKEM-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-AMBER-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-AMBUJACEM-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ANGELONE-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-APLAPOLLO-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-APOLLOHOSP-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ASHOKLEY-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ASIANPAINT-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ASTRAL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-AUBANK-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-AUROPHARMA-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-AXISBANK-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BAJAJ-AUTO-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BAJAJFINSV-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BAJFINANCE-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BANDHANBNK-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BANKBARODA-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BDL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BEL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BHARTIARTL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BHEL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BIOCON-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BLUESTARCO-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BOSCHLTD-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BPCL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BRITANNIA-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-BSE-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-CAMS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-CANBK-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-CDSL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-CGPOWER-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-CHOLAFIN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-CIPLA-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-COALINDIA-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-COFORGE-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-COLPAL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-CROMPTON-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-CUMMINSIND-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-CYIENT-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-DABUR-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-DALBHARAT-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-DELHIVERY-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-DIVISLAB-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-DIXON-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-DLF-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-DMART-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-DRREDDY-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-EICHERMOT-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ETERNAL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-FORTIS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-GLAND-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-GLENMARK-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-GMRAIRPORT-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-GODREJCP-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-GODREJPROP-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-GRASIM-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-HAVELLS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-HCLTECH-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-HDFCAMC-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-HDFCBANK-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-HDFCLIFE-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-HEROMOTOCO-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-HINDALCO-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-HINDUNILVR-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-HUDCO-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ICICIBANK-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ICICIGI-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-ICICIPRULI-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-IGL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-INDIGO-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-INDUSINDBK-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-INDUSTOWER-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-INFY-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-IREDA-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-JINDALSTEL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-JIOFIN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-JKCEMENT-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-JSWSTEEL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-JUBLFOOD-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-KALYANKJIL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-KAYNES-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-KEI-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-KFINTECH-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-KOTAKBANK-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-KPITTECH-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-LAURUSLABS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-LICHSGFIN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-LICI-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-LODHA-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-LT-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-LTIM-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-LUPIN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-M&amp;M-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-MANKIND-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-MARICO-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-MARUTI-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-MAZDOCK-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-MCX-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-MPHASIS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-NAUKRI-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-NESTLEIND-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-NYKAA-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-PAYTM-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-PERSISTENT-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-PGEL-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-POLICYBZR-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-POLYCAB-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-SAMMAANCAP-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-SHRIRAMFIN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-SIEMENS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-SONACOMS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-SUNPHARMA-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-SUZLON-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-TCS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\data\07-03-2025-TO-07-09-2025-TVSMOTOR-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
