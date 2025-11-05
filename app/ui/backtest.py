@@ -1,8 +1,8 @@
 import pandas as pd
 import streamlit as st
+from utility.utility import load_data
 
-
-def render_backtest(CSV_FILES, data_dir, load_data, SignalGenerator, TradeAgent, allocation_params, selected_file=None):
+def render_backtest(CSV_FILES, SignalGenerator, TradeAgent, allocation_params, selected_file=None):
     st.header("Back Test")
     if selected_file:
         file_name = selected_file

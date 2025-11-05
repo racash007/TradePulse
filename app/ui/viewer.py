@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from ui.common import normalize_signals_to_df
+from utility.utility import load_data
 
-
-def render_viewer(CSV_FILES, data_dir, load_data, SignalGenerator, TradeAgent, fvg_plotter_fn, allocation_params, selected_file=None):
+def render_viewer(CSV_FILES, SignalGenerator, TradeAgent, fvg_plotter_fn, allocation_params, selected_file=None):
     st.header("Viewer")
     if selected_file:
         file_name = selected_file
@@ -75,7 +75,7 @@ def render_viewer(CSV_FILES, data_dir, load_data, SignalGenerator, TradeAgent, f
                     except Exception:
                         pass
                 # Drop internal / undesired columns before displaying to the user
-                display_df = df_display.drop(columns=['index', 'fvg_alpha', 'source_strategy', 'projected_shares', 'color'], errors='ignore')
+                display_df = df_display.drop(columns=['index','symbol', 'fvg_alpha', 'source_strategy', 'projected_shares', 'color'], errors='ignore')
                 st.subheader("Signals")
                 st.dataframe(display_df)
 

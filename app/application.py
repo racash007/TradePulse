@@ -31,6 +31,7 @@ except Exception:
 
     # try alternative path if the file layout differs
 data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'resource', 'data')
+backTest_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'resource', 'backtest_data')
 
 CSV_FILES = [f for f in os.listdir(data_dir) if f.endswith('.csv')] if os.path.isdir(data_dir) else []
 
@@ -90,10 +91,10 @@ def run_streamlit_app():
 
     # render viewer/backtest inside tabs
     with tabs[0]:
-        render_viewer(CSV_FILES=CSV_FILES, data_dir=data_dir, load_data=load_data, SignalGenerator=SignalGenerator, TradeAgent=TradeAgent, fvg_plotter_fn=plot_both_strategies_on_ax, allocation_params=allocation_params, selected_file=file_name)
+        render_viewer(CSV_FILES=CSV_FILES, SignalGenerator=SignalGenerator, TradeAgent=TradeAgent, fvg_plotter_fn=plot_both_strategies_on_ax, allocation_params=allocation_params, selected_file=file_name)
 
     with tabs[1]:
-        render_backtest(CSV_FILES=CSV_FILES, data_dir=data_dir, load_data=load_data, SignalGenerator=SignalGenerator, TradeAgent=TradeAgent, allocation_params=allocation_params, selected_file=file_name)
+        render_backtest(CSV_FILES=CSV_FILES, SignalGenerator=SignalGenerator, TradeAgent=TradeAgent, allocation_params=allocation_params, selected_file=file_name)
 
     # # Viewer tab: show plot, signals and executed trades summary
     # with tabs[0]:
