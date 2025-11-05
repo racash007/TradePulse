@@ -3,14 +3,20 @@
 # -------------------------
 import math
 from typing import List, Dict, Any
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import pandas as pd
-from matplotlib.patches import Rectangle
-from pandas import DataFrame, Series
 
-from app.utility.utility import atr_series, hex_to_rgba, clamp
-from app.strategy.strategy import Strategy
+import matplotlib.pyplot as plt
+import pandas as pd
+from pandas import DataFrame
+
+# resilient imports: prefer package-style imports, fall back to local module imports
+try:
+    from app.strategy.signal import Signal
+    from app.strategy.strategy import Strategy
+    from app.utility.utility import atr_series, hex_to_rgba, clamp
+except Exception:
+    from strategy.signal import Signal
+    from strategy.strategy import Strategy
+    from utility.utility import atr_series, hex_to_rgba, clamp
 
 
 class FVGOrderBlocks(Strategy):
@@ -44,6 +50,7 @@ class FVGOrderBlocks(Strategy):
         self.col_bull = col_bull
         self.col_bear = col_bear
         self.lookback = lookback
+        self.window_size = 2000
 
         # storage for created "boxes" (dicts)
         self.bull_boxes: List[Dict[str, Any]] = []
@@ -51,7 +58,7 @@ class FVGOrderBlocks(Strategy):
         # temporary boxes for visualizing gaps
         self.temp_boxes: List[Dict[str, Any]] = []
         # signals: list of dicts {index, price, symbol, color}
-        self.signals: List[Dict[str, Any]] = []
+        self.signals: List[Signal] = []
 
     def run(self, df: pd.DataFrame):
         """
@@ -70,8 +77,8 @@ class FVGOrderBlocks(Strategy):
         filt_up = (df['Low'] - df['High'].shift(2)) / df['Low'] * 100
         filt_dn = (df['Low'].shift(2) - df['High']) / df['Low'].shift(2) * 100
 
-        max_up = filt_up.rolling(200, min_periods=1).max()
-        max_dn = filt_dn.rolling(200, min_periods=1).max()
+        max_up = filt_up.rolling(self.window_size, min_periods=1).max()
+        max_dn = filt_dn.rolling(self.window_size, min_periods=1).max()
 
 
         # Iterate bars in chronological order (0..n-1) like pine
@@ -180,7 +187,8 @@ class FVGOrderBlocks(Strategy):
                     label_idx = idx - 1
                     price_for_label = df['High'].shift(1).iat[idx]
                     self.signals.append(
-                        {"index": label_idx, "price": price_for_label, "symbol": "﹀", "color": self.col_bear})
+                        Signal(index=label_idx, price=price_for_label, type_="bearish", symbol="\ufe40", color=self.col_bear)
+                    )
 
         if to_delete_bear_indices:
             self.bear_boxes = [b for i, b in enumerate(self.bear_boxes) if i not in to_delete_bear_indices]
@@ -223,7 +231,8 @@ class FVGOrderBlocks(Strategy):
                     label_idx = idx - 1
                     price_for_label = df['Low'].shift(1).iat[idx]
                     self.signals.append(
-                        {"index": label_idx, "price": price_for_label, "symbol": "︽", "color": self.col_bull})
+                        Signal(index=label_idx, price=price_for_label, type_="bullish", symbol="\ufe3d", color=self.col_bull)
+                    )
 
         # remove bull boxes flagged
         if to_delete_bull_indices:
@@ -318,13 +327,16 @@ class FVGOrderBlocks(Strategy):
             }
             self.temp_boxes.append(temp)
 
-    def plot(self, df: pd.DataFrame, title: str = "FVG Order Blocks [BigBeluga]"):
+    def plot(self, df: pd.DataFrame, title: str = "FVG Order Blocks [BigBeluga]", ax=None):
         """
         Draw candles and boxes using matplotlib. Uses self.bull_boxes/self.bear_boxes/self.temp_boxes/self.signals created by run().
         """
+        import matplotlib.dates as mdates
+        from matplotlib.patches import Rectangle
         dates = list(df.index)
         # prepare figure
-        fig, ax = plt.subplots(figsize=(14, 7))
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(14, 7))
         ax.set_title(title, fontsize=16, fontweight='bold')
 
         # draw candlesticks manually
@@ -339,11 +351,8 @@ class FVGOrderBlocks(Strategy):
             # wick
             ax.plot([mdates.date2num(dt), mdates.date2num(dt)], [l, h], color=color, linewidth=0.7)
             # body
-            bottom = min(o, c)
-            height = abs(c - o)
-            rect = Rectangle((mdates.date2num(dt) - candle_width / 2, bottom),
-                             candle_width, max(height, 0.0001), facecolor=color, edgecolor=color, linewidth=0.5,
-                             zorder=2)
+            rect = Rectangle((mdates.date2num(dt) - candle_width / 2, min(o, c)), candle_width, max(abs(c - o), 0.0001),
+                             facecolor=color, edgecolor=color, linewidth=0.5, zorder=2)
             ax.add_patch(rect)
 
         # draw permanent bull boxes (green-ish)
@@ -409,17 +418,38 @@ class FVGOrderBlocks(Strategy):
 
         # draw signals labels (︽ or ﹀)
         for s in self.signals:
-            idx = s['index']
+            # support both Signal objects and dict-like signals
+            if hasattr(s, 'index'):
+                idx = s.index
+                price = s.price
+                symbol = s.symbol
+                color = s.color
+            elif isinstance(s, dict):
+                idx = s.get('index')
+                price = s.get('price')
+                symbol = s.get('symbol')
+                color = s.get('color')
+            else:
+                continue
+            if idx is None or price is None:
+                continue
             if idx < 0 or idx >= len(dates):
                 continue
-            x = mdates.date2num(dates[idx])
-            y = s['price']
-            ax.text(x, y, s['symbol'], fontsize=12, fontweight='bold', ha='center', va='center', color=s['color'],
-                    zorder=4)
+            x = mdates.date2num(dates[int(idx)])
+            y = price
+            sym = symbol if symbol is not None else ("\u2191" if (hasattr(s, 'type') and str(s.type).lower().startswith('bull')) else "\u2193")
+            col = color if color is not None else ('#167F52' if (hasattr(s, 'type') and str(s.type).lower().startswith('bull')) else '#C21919')
+            ax.text(x, y, sym, fontsize=12, fontweight='bold', ha='center', va='center', color=col, zorder=4)
 
         ax.set_ylabel("Price", fontsize=12, fontweight='bold')
         ax.grid(True, linestyle='--', linewidth=0.5, alpha=0.4)
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.show()
+        # If ax was created here, show the plot
+        # Removed ax.figure.show() for Tkinter embedding compatibility
+        # if ax is not None and hasattr(ax, 'figure') and hasattr(ax.figure, 'show'):
+        #     ax.figure.show()
+
+    def get_signals(self):
+        return self.signals

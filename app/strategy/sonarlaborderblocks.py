@@ -9,8 +9,15 @@ import numpy as np
 import pandas as pd
 from matplotlib.patches import Rectangle
 
-from app.strategy.strategy import Strategy
-from app.utility.utility import atr_series, hex_to_rgba, clamp
+# resilient imports: prefer package-style imports, fall back to local module imports
+try:
+    from app.strategy.strategy import Strategy
+    from app.utility.utility import atr_series, hex_to_rgba, clamp
+    from app.strategy.signal import Signal
+except Exception:
+    from strategy.strategy import Strategy
+    from utility.utility import atr_series, hex_to_rgba, clamp
+    from strategy.signal import Signal
 
 
 class SonarlabOrderBlocks(Strategy):
@@ -200,7 +207,8 @@ class SonarlabOrderBlocks(Strategy):
                     if (df['High'].iat[idx] > bot) and self.sell_alert:
                         # replicate alert('Price inside Bearish OB') once per bar: we simply append signal
                         self.signals.append(
-                            {"index": idx, "price": df['High'].iat[idx], "signal": "sell", "type": "bearish"})
+                            Signal(index=idx, price=df['High'].iat[idx], type_="bearish", symbol="\u2193", color="#C21919")
+                        )
 
             # -----------------
             # Bullish OB cleanup & alerts (pine)
@@ -216,11 +224,15 @@ class SonarlabOrderBlocks(Strategy):
                         continue
                     if (df['Low'].iat[idx] < top) and self.buy_alert:
                         self.signals.append(
-                            {"index": idx, "price": df['Low'].iat[idx], "signal": "buy", "type": "bullish"})
+                            Signal(index=idx, price=df['Low'].iat[idx], type_="bullish", symbol="\u2191", color="#167F52")
+                        )
 
-    def plot(self, df: pd.DataFrame, title: str = "Sonarlab - Order Blocks"):
+    def plot(self, df: pd.DataFrame, title: str = "Sonarlab - Order Blocks", ax=None):
+        import matplotlib.dates as mdates
+        from matplotlib.patches import Rectangle
         dates = list(df.index)
-        fig, ax = plt.subplots(figsize=(14, 7))
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(14, 7))
         ax.set_title(title, fontsize=16, fontweight='bold')
         # draw candles
         width = 0.6
@@ -259,23 +271,44 @@ class SonarlabOrderBlocks(Strategy):
                              linewidth=1, zorder=1)
             ax.add_patch(rect)
 
-        # draw alerts signals
+        # draw alerts signals (support Signal objects and dict-like signals)
         for s in self.signals:
-            idx = s['index']
+            if hasattr(s, 'index'):
+                idx = s.index
+                price = s.price
+                typ = getattr(s, 'type', None)
+                symbol = getattr(s, 'symbol', None)
+                color = getattr(s, 'color', None)
+            elif isinstance(s, dict):
+                idx = s.get('index')
+                price = s.get('price')
+                typ = s.get('type') or s.get('signal')
+                symbol = s.get('symbol')
+                color = s.get('color')
+            else:
+                continue
+            if idx is None or price is None:
+                continue
             if idx < 0 or idx >= len(dates):
                 continue
-            x = mdates.date2num(dates[idx])
-            y = s['price']
-            sym = '↑' if s['signal'] == 'buy' else '↓'
-            color = '#167F52' if s['signal'] == 'buy' else '#C21919'
-            ax.text(x, y, sym, fontsize=12, color=color, fontweight='bold', ha='center', va='center', zorder=4)
+            x = mdates.date2num(dates[int(idx)])
+            y = price
+            # symbol & color fallback
+            if symbol is None:
+                sym = '↑' if (isinstance(typ, str) and typ.lower().startswith('bull')) else '↓'
+            else:
+                sym = symbol
+            col = color if color is not None else ('#167F52' if (isinstance(typ, str) and typ.lower().startswith('bull')) else '#C21919')
+            ax.text(x, y, sym, fontsize=12, color=col, fontweight='bold', ha='center', va='center', zorder=4)
 
         ax.set_ylabel("Price", fontsize=12, fontweight='bold')
         ax.grid(True, linestyle='--', linewidth=0.5, alpha=0.4)
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
         plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.show()
+        # If ax was created here, show the plot
+        # Removed ax.figure.show() for Tkinter embedding compatibility
+        # if ax is not None and hasattr(ax, 'figure') and hasattr(ax.figure, 'show'):
+        #     ax.figure.show()
 
-
-
+    def get_signals(self):
+        return self.signals
