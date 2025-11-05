@@ -272,7 +272,7 @@ class SignalGenerator:
         # try to normalize date column to pandas datetime (if present)
         if 'date' in df.columns:
             try:
-                df['date'] = pd.to_datetime(df['date'], errors='ignore')
+                df['date'] = pd.to_datetime(df['date'])
             except Exception:
                 pass
         return df

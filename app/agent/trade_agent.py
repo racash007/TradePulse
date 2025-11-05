@@ -3,18 +3,38 @@ import pandas as pd
 
 # resilient import for EnhancedSignal if package vs script
 try:
-    from app.strategy.signal_generator import EnhancedSignal
+    from app.agent.signal_generator import EnhancedSignal
 except Exception:
     import importlib
-    EnhancedSignal = importlib.import_module('strategy.signal_generator').EnhancedSignal
+    _candidates = [
+        'app.agent.signal_generator',
+        'agent.signal_generator',
+        'app.agent.signal_generator',
+        'strategy.signal_generator',
+        'signal_generator',
+        'app.signal_generator'
+    ]
+    EnhancedSignal = None
+    for _m in _candidates:
+        try:
+            mod = importlib.import_module(_m)
+            if hasattr(mod, 'EnhancedSignal'):
+                EnhancedSignal = getattr(mod, 'EnhancedSignal')
+                break
+        except Exception:
+            continue
+    if EnhancedSignal is None:
+        raise ImportError("Could not import EnhancedSignal from any candidate module paths: " + ",".join(_candidates))
 
 
 class TradeAgent:
-    def __init__(self, initial_capital: float = 100000.0, target_pct: float = 0.07, stop_loss_pct: float = 0.03):
+    def __init__(self, initial_capital: float = 100000.0, target_pct: float = 0.07, stop_loss_pct: float = 0.03, allocation_step: float = 0.2):
         self.initial_capital = float(initial_capital)
         self.cash = float(initial_capital)
         self.target_pct = float(target_pct)
         self.stop_loss_pct = float(stop_loss_pct)
+        # new: allocation fraction per strength unit (e.g. 0.2 -> strength 1 = 20%)
+        self.allocation_step = float(allocation_step)
         self.trades: List[Dict[str, Any]] = []
         self.winning_streak = 0
         self.losing_streak = 0
@@ -23,10 +43,13 @@ class TradeAgent:
         self.final_pnl = 0.0
 
     def allocation_pct(self, strength: int) -> float:
-        """Allocation percentage based on signal strength: 1->20%, 2->40%, etc. Cap at 100%"""
+        """Allocation percentage based on signal strength: uses configured allocation_step (cap at 100%)"""
         if strength is None:
             return 0.0
-        pct = 0.2 * int(strength)
+        try:
+            pct = self.allocation_step * int(strength)
+        except Exception:
+            pct = 0.0
         return min(max(pct, 0.0), 1.0)
 
     def execute_signals(self, df: pd.DataFrame, enhanced_signals: List[EnhancedSignal]) -> pd.DataFrame:
@@ -170,22 +193,12 @@ class TradeAgent:
                     self.max_losing_streak = self.losing_streak
                 total_losses += 1
 
-            trade = {
-                'entry_index': idx,
-                'entry_date': getattr(s, 'date', None),
-                'exit_index': exit_idx,
-                'exit_date': df.index[exit_idx] if exit_idx is not None and len(df.index) > exit_idx else None,
-                'side': 'buy' if long else 'sell',
-                'entry_price': entry_price,
-                'exit_price': exit_price,
-                'shares': shares,
-                'pnl': pnl,
-                'outcome': outcome,
-                'signalStrength': strength
-            }
+            trade = {'entry_index': idx, 'entry_date': getattr(s, 'date', None), 'exit_index': exit_idx,
+                     'exit_date': df.index[exit_idx] if exit_idx is not None and len(df.index) > exit_idx else None,
+                     'side': 'buy' if long else 'sell', 'entry_price': entry_price, 'exit_price': exit_price,
+                     'shares': shares, 'pnl': pnl, 'outcome': outcome, 'signalStrength': strength,
+                     'cash_before': cash_before, 'cash_after': cash_after}
             # add cash debug info
-            trade['cash_before'] = cash_before
-            trade['cash_after'] = cash_after
             self.trades.append(trade)
 
         # final balance and pnl

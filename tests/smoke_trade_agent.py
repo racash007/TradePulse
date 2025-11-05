@@ -4,8 +4,8 @@ proj_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if proj_root not in sys.path:
     sys.path.insert(0, proj_root)
 
-from app.strategy.signal_generator import SignalGenerator
-from app.strategy.trade_agent import TradeAgent
+from app.agent.signal_generator import SignalGenerator
+from app.agent.trade_agent import TradeAgent
 
 sg = SignalGenerator()
 # load DataFrame using the generator helper (accepts filter or path)

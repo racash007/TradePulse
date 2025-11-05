@@ -31,15 +31,15 @@ def clamp(v, a, b):
 # -------------------------
 # Dummy dataset and run examples
 # -------------------------
-def load_data(filter: str):
+def load_data(file_name: str):
     """
     Load OHLC data from a CSV file in resource/data whose name contains the filter string.
     If no file matches, raises FileNotFoundError.
     """
     data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'resource', 'data')
-    files = [f for f in os.listdir(data_dir) if filter in f and f.endswith('.csv')]
+    files = [f for f in os.listdir(data_dir) if file_name in f and f.endswith('.csv')]
     if not files:
-        raise FileNotFoundError(f"No CSV file found in {data_dir} containing '{filter}'")
+        raise FileNotFoundError(f"No CSV file found in {data_dir} containing '{file_name}'")
     file_path = os.path.join(data_dir, files[0])
     df = pd.read_csv(file_path)
     # Select and rename required columns
