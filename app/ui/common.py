@@ -8,7 +8,7 @@ def load_and_generate_signals(load_data_fn, SignalGeneratorClass, file_name) -> 
     """Load data using load_data_fn and generate enhanced signals using SignalGeneratorClass."""
     df = load_data_fn(file_name)
     sg = SignalGeneratorClass()
-    enhanced = sg.generate_from_file(df) or []
+    enhanced = sg.generate_from_file(df, file_name) or []
     return df, enhanced
 
 

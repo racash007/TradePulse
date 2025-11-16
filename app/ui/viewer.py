@@ -2,8 +2,10 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from ui.common import normalize_signals_to_df
-from utility.utility import load_data
+from app.model import Signal
+from app.ui.common import normalize_signals_to_df
+from app.utility.utility import load_data
+from app.ui.signal_utils import filter_buy_signals, format_trades_dates
 
 def render_viewer(CSV_FILES, SignalGenerator, TradeAgent, fvg_plotter_fn, allocation_params, selected_file=None):
     st.header("Viewer")
@@ -27,9 +29,7 @@ def render_viewer(CSV_FILES, SignalGenerator, TradeAgent, fvg_plotter_fn, alloca
         # show selected file and rows before the plot controls
         st.markdown(f"**Selected file:** `{file_name}`")
         st.markdown(f"**Rows in file:** {rows}")
-
-        st.subheader("Price Chart + Strategy Overlays")
-        if st.button("Plot Graph"):
+        if st.button("Run Simulation"):
             try:
                 market_data_df = load_data(file_name)
             except Exception as e:
@@ -40,15 +40,13 @@ def render_viewer(CSV_FILES, SignalGenerator, TradeAgent, fvg_plotter_fn, alloca
             fvg_strat, sonar_strat = fvg_plotter_fn(ax, market_data_df, file_name)
             st.pyplot(fig)
 
-            # generate signals
-            enhanced_list = []
             try:
                 sg = SignalGenerator()
-                enhanced_list = sg.generate_from_file(market_data_df) or []
+                enhanced_list:list[Signal] = sg.generate_from_file(market_data_df, file_name) or []
             except Exception:
-                enhanced_list = []
+                enhanced_list:list[Signal] = []
 
-            filtered_list = [e for e in enhanced_list if getattr(e, 'signalStrength', 0) != 0]
+            filtered_list = filter_buy_signals(enhanced_list)
 
             if not filtered_list:
                 st.info("No signals with non-zero signalStrength for the selected file.")
@@ -75,7 +73,7 @@ def render_viewer(CSV_FILES, SignalGenerator, TradeAgent, fvg_plotter_fn, alloca
                     except Exception:
                         pass
                 # Drop internal / undesired columns before displaying to the user
-                display_df = df_display.drop(columns=['index','symbol', 'fvg_alpha', 'source_strategy', 'projected_shares', 'color'], errors='ignore')
+                display_df = df_display.drop(columns=['index', 'fvg_alpha', 'source_strategy', 'color'], errors='ignore')
                 st.subheader("Signals")
                 st.dataframe(display_df)
 
@@ -89,19 +87,9 @@ def render_viewer(CSV_FILES, SignalGenerator, TradeAgent, fvg_plotter_fn, alloca
 
             if summary is not None:
                 st.subheader("Backtest Summary")
-                if isinstance(summary, dict):
-                    summary_df = pd.DataFrame(list(summary.items()), columns=['metric', 'value'])
-                    st.table(summary_df)
-                else:
-                    st.write(summary)
+                st.table(summary)
 
             if trades_df is not None and not trades_df.empty:
                 st.subheader("Executed Trades")
-                tf = trades_df.copy()
-                for c in ['entry_date', 'exit_date']:
-                    if c in tf.columns:
-                        try:
-                            tf[c] = pd.to_datetime(tf[c]).dt.strftime('%Y-%m-%d')
-                        except Exception:
-                            pass
+                tf = format_trades_dates(trades_df)
                 st.dataframe(tf)
