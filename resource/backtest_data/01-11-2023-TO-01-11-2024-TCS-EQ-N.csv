@@ -1,4 +1,4 @@
-﻿"Symbol  ","Series  ","Date  ","Prev Close  ","Open Price  ","High Price  ","Low Price  ","Last Price  ","Close Price  ","Average Price ","Total Traded Quantity  ","Turnover ₹  ","No. of Trades  ","Deliverable Qty  ","% Dly Qt to Traded Qty  "
+﻿"Symbol","Series","Date","Prev Close","Open Price","High Price","Low Price","Last Price","Close Price","Average Price ","Total Traded Quantity","Turnover ₹","No. of Trades","Deliverable Qty","% Dly Qt to Traded Qty"
 "TCS","EQ","01-Nov-2023","3,368.75","3,355.00","3,371.60","3,311.00","3,311.40","3,330.65","3,347.22","15,63,475","5,23,32,96,947.80","1,12,623","11,48,529","73.46"
 "TCS","EQ","02-Nov-2023","3,330.65","3,343.20","3,375.95","3,343.20","3,363.00","3,360.10","3,363.98","12,45,384","4,18,94,48,412.50","97,073","5,42,537","43.56"
 "TCS","EQ","03-Nov-2023","3,360.10","3,382.00","3,387.90","3,344.30","3,351.00","3,350.90","3,362.79","14,02,598","4,71,66,46,465.75","1,11,516","9,55,820","68.15"

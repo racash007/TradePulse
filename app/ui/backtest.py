@@ -2,22 +2,57 @@
 Backtest UI component for running strategy backtests.
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Any
 
 import pandas as pd
 import streamlit as st
 
 from app.model.signal import Signal
 from app.utility.utility import load_data
+from app.utility.file_util import get_security_name
 from app.agent.signal_generator import get_signal_generator
 from app.ui.signal_utils import filter_buy_signals, format_trades_dates, format_numeric_columns
+from app.ui.common import set_force_close_at_end, get_force_close_at_end
 
 
-def render_backtest(CSV_FILES, SignalGenerator, TradeAgent, allocation_params):
+def render_backtest(CSV_FILES, TradeAgent, allocation_params):
     """Render the backtest UI and execute backtests."""
+    # Checkbox to toggle forced close of open positions at end of data
+    try:
+        default_force = get_force_close_at_end()
+    except Exception:
+        default_force = False
+
+    force_close = st.checkbox("Force close open positions at end of data", value=default_force)
+    # Persist flag in shared common module
+    set_force_close_at_end(bool(force_close))
+
+    # Security selection multiselect (use get_security_name as label)
+    try:
+        security_labels = []
+        file_to_security = {}
+        for f in CSV_FILES or []:
+            try:
+                sec = get_security_name(f)
+            except Exception:
+                sec = f
+            file_to_security.setdefault(sec, []).append(f)
+            if sec not in security_labels:
+                security_labels.append(sec)
+    except Exception:
+        security_labels = []
+        file_to_security = {}
+
+    selected_secs = st.multiselect("Select securities to backtest", options=security_labels, default=security_labels)
+    # Build filtered file list matching selected securities
+    filtered_files = []
+    for sec in selected_secs:
+        filtered_files.extend(file_to_security.get(sec, []))
+
     if st.button("Run Backtest"):
         with st.spinner("Running backtest..."):
-            _run_backtest(CSV_FILES, TradeAgent, allocation_params)
+            # pass filtered_files (if none selected, fall back to original CSV_FILES)
+            _run_backtest(filtered_files or CSV_FILES, TradeAgent, allocation_params)
 
 
 def _run_backtest(CSV_FILES: List[str], TradeAgent, allocation_params: dict):
@@ -71,41 +106,96 @@ def _run_backtest(CSV_FILES: List[str], TradeAgent, allocation_params: dict):
 
 
 def _process_files_parallel(
-    csv_files: List[str],
-    sg
+        csv_files: List[str],
+        sg
 ) -> List[Tuple[str, pd.DataFrame, List[Signal]]]:
-    """Process CSV files in parallel for better performance."""
-    results = []
+    """Process CSV files in parallel for better performance.
 
-    # Use ThreadPoolExecutor for I/O-bound operations
-    with ThreadPoolExecutor(max_workers=min(len(csv_files), 4)) as executor:
-        future_to_file = {
-            executor.submit(_process_single_file, file_name, sg): file_name
-            for file_name in csv_files
-        }
-
+    New behavior:
+    - Load each CSV file into a DataFrame
+    - Group files by security name extracted from filename
+    - Sort each group's files by start date and concatenate into a single DataFrame per security
+    - Run the provided SignalGenerator `sg` on each merged DataFrame and return list of (security_name, merged_df, signals)
+    """
+    # First load all dataframes (in parallel) into a list of (file_name, df)
+    loaded = []
+    with ThreadPoolExecutor(max_workers=min(len(csv_files) or 1, 4)) as executor:
+        future_to_file = {executor.submit(load_data, file_name, 'backtest_data'): file_name for file_name in csv_files}
         for future in as_completed(future_to_file):
-            file_name = future_to_file[future]
+            fname = future_to_file[future]
             try:
-                result = future.result()
-                if result:
-                    results.append(result)
+                df = future.result()
+                if df is None or df.empty:
+                    logger = None
+                    # Use streamlit warning if available
+                    try:
+                        st.warning(f"No data in file: {fname}")
+                    except Exception:
+                        pass
+                    continue
+                loaded.append((fname, df))
             except Exception as e:
-                st.warning(f"Failed to process {file_name}: {e}")
+                try:
+                    st.warning(f"Failed to load {fname}: {e}")
+                except Exception:
+                    pass
 
-    return results
+    # Helper to extract security name
+    def _extract_security(fname: str) -> str:
+        try:
+            parts = fname.split("-")
+            if len(parts) >= 8:
+                return parts[7]
+        except Exception:
+            pass
+        return fname.rsplit('.', 1)[0] if isinstance(fname, str) else str(fname)
+
+    # Group by security and sort each group's dfs by start date
+    grouped: dict = {}
+    for fname, df in loaded:
+        sec = _extract_security(fname)
+        start = pd.to_datetime(df.index.min()) if hasattr(df, 'index') and len(df.index) > 0 else pd.NaT
+        grouped.setdefault(sec, []).append((fname, df, start))
+
+    merged_results: List[Tuple[str, pd.DataFrame, List[Signal]]] = []
+    for sec in sorted(grouped.keys()):
+        entries = grouped[sec]
+        entries.sort(key=lambda x: (pd.NaT if pd.isna(x[2]) else x[2]))
+        # Concatenate the dataframes for this security, in chronological order
+        dfs = [e[1] for e in entries]
+        try:
+            merged_df = pd.concat(dfs).sort_index()
+            # drop duplicate indices keeping first occurrence
+            merged_df = merged_df[~merged_df.index.duplicated(keep='first')]
+        except Exception:
+            # fallback: take first df
+            merged_df = dfs[0]
+
+        # Run signal generator on merged dataframe
+        try:
+            signals = sg.generate_from_file(merged_df, sec) or []
+        except Exception as e:
+            try:
+                st.warning(f"Signal generation failed for {sec}: {e}")
+            except Exception:
+                pass
+            signals = []
+
+        merged_results.append((sec, merged_df, signals))
+
+    return merged_results
 
 
 def _process_single_file(
-    file_name: str,
-    sg
-) -> Tuple[str, pd.DataFrame, List[Signal]]:
+        file_name: str,
+        sg
+) -> Optional[Tuple[str, pd.DataFrame, List[Signal]]]:
     """Process a single CSV file and generate signals."""
     import traceback
     try:
-        df = load_data(file_name)
+        df = load_data(file_name, "backtest_data")
         if df is None or df.empty:
-            return None
+            return None  # type: ignore[return-value]
 
         signals = sg.generate_from_file(df, file_name) or []
         return file_name, df, signals
@@ -116,11 +206,11 @@ def _process_single_file(
 
 
 def _execute_all_trades(
-    signals: List[Signal],
-    file_dataframes: dict,
-    TradeAgent,
-    allocation_params: dict
-) -> Tuple[pd.DataFrame, dict]:
+        signals: List[Signal],
+        file_dataframes: dict,
+        TradeAgent,
+        allocation_params: dict
+) -> Tuple[pd.DataFrame, dict, Any]:
     """Execute all trades chronologically with portfolio tracking."""
     # Create a single TradeAgent
     ta = TradeAgent(**allocation_params)
@@ -167,10 +257,10 @@ def _execute_all_trades(
     return trades_df, summary, portfolio
 
 
-def _find_matching_dataframe(security: str, file_dataframes: dict) -> pd.DataFrame:
+def _find_matching_dataframe(security: str, file_dataframes: dict) -> Optional[pd.DataFrame]:
     """Find the DataFrame that matches the given security name."""
     if not security:
-        return None
+        return None  # type: ignore[return-value]
 
     for file_name, df in file_dataframes.items():
         # Try to extract security name from file
@@ -188,7 +278,7 @@ def _find_matching_dataframe(security: str, file_dataframes: dict) -> pd.DataFra
         except (IndexError, AttributeError):
             continue
 
-    return None
+    return None  # type: ignore[return-value]
 
 
 def _display_results(summary, trades_df: pd.DataFrame, portfolio=None):
@@ -276,7 +366,11 @@ def _display_portfolio(portfolio):
     """Display open positions in the portfolio."""
     st.subheader("Open Positions (Portfolio)")
 
-    positions = portfolio.get_all_positions()
+    # Try to obtain positions list
+    try:
+        positions = portfolio.get_all_positions()
+    except Exception:
+        positions = []
 
     if not positions:
         st.info("No open positions remaining.")
@@ -289,30 +383,55 @@ def _display_portfolio(portfolio):
         st.metric("Open Positions", len(positions))
 
     with col2:
-        st.metric("Capital in Positions", f"₹{portfolio.total_capital_used:,.2f}")
+        total_cap_used = getattr(portfolio, 'total_capital_used', None)
+        if total_cap_used is None:
+            # try summing from positions if available
+            try:
+                total_cap_used = sum(getattr(p, 'money_allocated', 0) for p in positions)
+            except Exception:
+                total_cap_used = 0.0
+        st.metric("Capital in Positions", f"₹{total_cap_used:,.2f}")
 
     with col3:
-        total_value = sum(pos.current_value for pos in positions)
+        try:
+            total_value = sum(getattr(p, 'current_value', getattr(p, 'shares', 0) * getattr(p, 'entry_price', 0)) for p in positions)
+        except Exception:
+            total_value = 0.0
         st.metric("Current Value", f"₹{total_value:,.2f}")
 
-    # Show positions table
-    portfolio_df = portfolio.to_dataframe()
-    if not portfolio_df.empty:
-        # Format for display
-        display_df = portfolio_df.copy()
+    # Prepare positions table
+    try:
+        portfolio_df = portfolio.to_dataframe()
+    except Exception:
+        # fallback to building a DataFrame from positions
+        rows = []
+        for p in positions:
+            rows.append({
+                'security': getattr(p, 'security', getattr(p, 'symbol', '')),
+                'entry_date': getattr(p, 'entry_date', ''),
+                'entry_price': getattr(p, 'entry_price', ''),
+                'shares': getattr(p, 'shares', ''),
+                'money_allocated': getattr(p, 'money_allocated', ''),
+                'stop_loss': getattr(p, 'stop_loss', ''),
+                'target': getattr(p, 'target', ''),
+                'current_value': getattr(p, 'current_value', getattr(p, 'shares', 0) * getattr(p, 'entry_price', 0))
+            })
+        portfolio_df = pd.DataFrame(rows)
 
-        # Format date column
-        if 'entry_date' in display_df.columns:
-            display_df['entry_date'] = pd.to_datetime(
-                display_df['entry_date'], errors='coerce'
-            ).dt.strftime('%Y-%m-%d')
+    if portfolio_df is None or portfolio_df.empty:
+        st.info("No portfolio rows to display.")
+        return
 
-        # Format numeric columns
-        numeric_cols = ['entry_price', 'money_allocated', 'stop_loss', 'target', 'current_value']
-        for col in numeric_cols:
-            if col in display_df.columns:
-                display_df[col] = display_df[col].apply(
-                    lambda x: f"{x:,.2f}" if pd.notna(x) else ''
-                )
+    display_df = portfolio_df.copy()
+    # Format date column if present
+    if 'entry_date' in display_df.columns:
+        display_df['entry_date'] = pd.to_datetime(display_df['entry_date'], errors='coerce').dt.strftime('%Y-%m-%d')
 
-        st.dataframe(display_df, use_container_width=True)
+    # Format numeric columns
+    numeric_cols = ['entry_price', 'money_allocated', 'stop_loss', 'target', 'current_value']
+    for col in numeric_cols:
+        if col in display_df.columns:
+            display_df[col] = display_df[col].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else '')
+
+    st.dataframe(display_df, use_container_width=True)
+

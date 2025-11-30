@@ -62,7 +62,7 @@ def point_in_box(idx: int, price: float, box: dict) -> bool:
     bottom = box.get('bottom')
     try:
         idx_ok = (idx >= left) and (idx <= right)
-        price_ok = (top is not None and bottom is not None and price <= top and price >= bottom)
+        price_ok = (top is not None and bottom is not None and top >= price >= bottom)
         return idx_ok and price_ok
     except Exception:
         return False

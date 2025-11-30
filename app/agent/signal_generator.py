@@ -163,14 +163,20 @@ class SignalGenerator:
                 'source_strategy': ','.join(s.source_strategy) if isinstance(s.source_strategy, list) else s.source_strategy
             })
 
-        df = pd.DataFrame(rows)
+        # Always ensure the resulting DataFrame has the expected columns even when empty
+        columns = ['date', 'index', 'price', 'type', 'symbol', 'color', 'fvg_alpha', 'signalStrength', 'source_strategy']
+        if rows:
+            df = pd.DataFrame(rows)
+        else:
+            df = pd.DataFrame(columns=columns)
 
-        # Normalize date column
+        # Normalize date column to datetime dtype if present
         if 'date' in df.columns:
             try:
                 df['date'] = pd.to_datetime(df['date'])
             except Exception:
-                pass
+                # ensure dtype exists even if parsing fails
+                df['date'] = pd.Series([], dtype='datetime64[ns]')
 
         return df
 

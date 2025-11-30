@@ -5,7 +5,7 @@ if proj_root not in sys.path:
     sys.path.insert(0, proj_root)
 
 from app.agent.signal_generator import SignalGenerator
-from app.agent.trade_agent import TradeAgent
+from app.agent.paper_trade_agent import PaperTradeAgent
 
 sg = SignalGenerator()
 # load DataFrame using the generator helper (accepts filter or path)
@@ -15,7 +15,7 @@ filtered = [e for e in enh if getattr(e, 'signalStrength', 0) != 0]
 print('Enhanced total:', len(enh))
 print('Filtered non-zero:', len(filtered))
 if filtered:
-    ta = TradeAgent()
+    ta = PaperTradeAgent()
     trades = ta.execute_signals(df, filtered)
     print('\nSummary:')
     summary = ta.get_summary()

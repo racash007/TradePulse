@@ -10,6 +10,181 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\resource\backtest_data\01-11-2020-TO-01-11-2021-INFY-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2020-TO-01-11-2021-M&amp;M-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2020-TO-01-11-2021-OFSS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2020-TO-01-11-2021-TCS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2020-TO-01-11-2021-TITAN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2021-TO-01-11-2022-INFY-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2021-TO-01-11-2022-M&amp;M-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2021-TO-01-11-2022-OFSS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2021-TO-01-11-2022-TCS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2021-TO-01-11-2022-TITAN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2022-TO-01-11-2023-INFY-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2022-TO-01-11-2023-M&amp;M-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2022-TO-01-11-2023-OFSS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2022-TO-01-11-2023-TCS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2022-TO-01-11-2023-TITAN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2023-TO-01-11-2024-INFY-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2023-TO-01-11-2024-M&amp;M-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2023-TO-01-11-2024-OFSS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2023-TO-01-11-2024-TCS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2023-TO-01-11-2024-TITAN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2024-TO-01-11-2025-INFY-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2024-TO-01-11-2025-M&amp;M-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2024-TO-01-11-2025-OFSS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2024-TO-01-11-2025-TCS-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\resource\backtest_data\01-11-2024-TO-01-11-2025-TITAN-EQ-N.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\resource\data\07-03-2025-TO-07-09-2025-ABB-EQ-N.csv">
           <value>
             <Attribute>

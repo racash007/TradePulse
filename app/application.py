@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from pandas import DataFrame
 from app.agent.signal_generator import SignalGenerator
-from app.agent.trade_agent import TradeAgent
+from app.agent.paper_trade_agent import PaperTradeAgent
 from app.strategy.fvgorderblocks import FVGOrderBlocks
 from app.strategy.sonarlaplaceorderblocks import SonarlaplaceOrderBlocks
 from app.ui.backtest import render_backtest
@@ -73,10 +73,10 @@ def run_streamlit_app():
 
     # render viewer/backtest inside tabs
     with tabs[0]:
-        render_viewer(CSV_FILES=CSV_FILES, SignalGenerator=SignalGenerator, TradeAgent=TradeAgent, fvg_plotter_fn=plot_both_strategies_on_ax, allocation_params=allocation_params, selected_file=file_name)
+        render_viewer(CSV_FILES=CSV_FILES, SignalGenerator=SignalGenerator, TradeAgent=PaperTradeAgent, fvg_plotter_fn=plot_both_strategies_on_ax, allocation_params=allocation_params, selected_file=file_name)
 
     with tabs[1]:
-        render_backtest(CSV_FILES=CSV_FILES, SignalGenerator=SignalGenerator, TradeAgent=TradeAgent, allocation_params=allocation_params)
+        render_backtest(CSV_FILES=BACK_TEST_CSV_FILES, TradeAgent=PaperTradeAgent, allocation_params=allocation_params)
 
  
 

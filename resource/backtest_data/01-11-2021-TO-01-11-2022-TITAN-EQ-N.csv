@@ -1,4 +1,4 @@
-﻿"Symbol  ","Series  ","Date  ","Prev Close  ","Open Price  ","High Price  ","Low Price  ","Last Price  ","Close Price  ","Average Price ","Total Traded Quantity  ","Turnover ₹  ","No. of Trades  ","Deliverable Qty  ","% Dly Qt to Traded Qty  "
+﻿"Symbol","Series","Date","Prev Close","Open Price","High Price","Low Price","Last Price","Close Price","Average Price ","Total Traded Quantity","Turnover ₹","No. of Trades","Deliverable Qty","% Dly Qt to Traded Qty"
 "TITAN","EQ","01-Nov-2021","2,383.55","2,441.45","2,441.45","2,390.35","2,407.80","2,406.30","2,407.82","12,76,469","3,07,35,13,400.30","92,131","6,24,149","48.90"
 "TITAN","EQ","02-Nov-2021","2,406.30","2,422.80","2,464.80","2,421.05","2,451.00","2,453.95","2,443.56","15,46,219","3,77,82,78,593.30","84,290","6,91,200","44.70"
 "TITAN","EQ","03-Nov-2021","2,453.95","2,462.00","2,471.65","2,406.05","2,421.00","2,417.95","2,432.91","15,54,405","3,78,17,31,974.75","75,985","8,55,694","55.05"

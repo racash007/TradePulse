@@ -3,7 +3,11 @@ TradeAgent - Executes trades based on signals and tracks performance with Portfo
 """
 from typing import List, Optional
 import pandas as pd
+from typing_extensions import override
+import logging
+from app.ui.common import get_force_close_at_end
 
+from app.agent.agent import Agent
 from app.model.OutcomeType import OutcomeType
 from app.model.SignalType import SignalType
 from app.model.trade import Trade, SignalStrength
@@ -12,7 +16,11 @@ from app.model.signal import Signal
 from app.model.portfolio import Portfolio, Position
 
 
-class TradeAgent:
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+
+class PaperTradeAgent(Agent):
     def __init__(
         self,
         initial_capital: float = 100000.0,
@@ -20,6 +28,8 @@ class TradeAgent:
         stop_loss_pct: float = 0.03,
         allocation_step: float = 0.2
     ):
+        self.final_pnl = 0
+        self.final_balance = initial_capital
         self.initial_capital = initial_capital
         self.target_pct = target_pct
         self.stop_loss_pct = stop_loss_pct
@@ -49,6 +59,7 @@ class TradeAgent:
         pct = self.allocation_step * strength
         return min(pct, 1.0)
 
+
     def execute_signals(self, df: pd.DataFrame, enhanced_signals: List[Signal]) -> pd.DataFrame:
         """
         Execute trades based on enhanced signals and historical price data.
@@ -59,15 +70,45 @@ class TradeAgent:
         # Sort signals chronologically by date
         signals = sorted(enhanced_signals, key=lambda s: s.date if s.date is not None else pd.Timestamp.min)
 
+        # expose df mapping so _process_pending_exits can adjust dates if needed
+        self._df_mapping = {getattr(signal, 'symbol', 'unknown'): df for signal in signals}
+
         for signal in signals:
             # Process any pending exits that occur before this signal's date
+            logger.debug("Processing pending exits before signal date: %s", signal.date)
             self._process_pending_exits(signal.date)
 
+            logger.debug("Executing signal: %s at index %s price %s", getattr(signal, 'symbol', None), getattr(signal, 'index', None), getattr(signal, 'price', None))
             trade = self._execute_single_trade(df, signal)
             if trade:
                 self.trades.append(trade)
 
-        # Calculate final results (don't close open positions)
+        # After processing all signals, optionally force-close remaining positions at last available bar
+        if get_force_close_at_end():
+            try:
+                last_date = df.index[-1]
+                logger.debug("Force-closing open positions at end of data: %s", last_date)
+                # For each open position, set exit info to last bar close and process exit
+                for security, position in list(self.portfolio.positions.items()):
+                    # set exit info if not already set
+                    if not hasattr(position, 'exit_idx') or position.exit_idx is None:
+                        position.exit_idx = len(df.index) - 1
+                        position.exit_date = df.index[position.exit_idx]
+                        position.exit_price = float(df['Close'].iat[position.exit_idx]) if 'Close' in df.columns else float(df.iat[position.exit_idx, -1])
+                        # compute pnl
+                        if getattr(position, 'is_long', True):
+                            position.pnl = position.shares * (position.exit_price - position.entry_price)
+                            position.proceeds = position.shares * position.exit_price
+                        else:
+                            position.pnl = position.shares * (position.entry_price - position.exit_price)
+                            position.proceeds = 0.0
+                        position.outcome = OutcomeType.EXIT
+                # Now process exits up to last_date
+                self._process_pending_exits(last_date)
+            except Exception as e:
+                logger.exception("Error during forced close: %s", e)
+
+        # Calculate final results (don't close open positions unless forced)
         self.final_balance = self.cash + self.portfolio.total_capital_used
         self.final_pnl = self.final_balance - self.initial_capital
 
@@ -145,59 +186,61 @@ class TradeAgent:
             df, signal.index, tp_price, sl_price, is_long
         )
 
-        # Get exit date
-        exit_date = df.index[exit_idx] if exit_idx < len(df.index) else None
+        # Map entry index
+        try:
+            entry_idx = int(signal.index)
+        except Exception:
+            entry_idx = None
 
-        # If exit was found within data range, create a pending trade
-        # The cash will be returned when we process signals at or after the exit date
-        if outcome in [OutcomeType.WIN, OutcomeType.LOSS]:
-            # Calculate P&L
-            if is_long:
-                pnl = shares * (exit_price - entry_price)
-                proceeds = shares * exit_price
-            else:
-                pnl = shares * (entry_price - exit_price)
-                proceeds = 0  # For shorts
+        # If an exit was found, ensure it's strictly after the entry index
+        if exit_idx is not None and entry_idx is not None and exit_idx > entry_idx and outcome in [OutcomeType.WIN, OutcomeType.LOSS]:
+             # Calculate P&L
+             if is_long:
+                 pnl = shares * (exit_price - entry_price)
+                 proceeds = shares * exit_price
+             else:
+                 pnl = shares * (entry_price - exit_price)
+                 proceeds = 0  # For shorts
 
-            # Create position to track until exit date
-            position = Position(
-                security=security,
-                shares=shares,
-                entry_price=entry_price,
-                entry_date=signal.date,
-                entry_index=signal.index,
-                money_allocated=cost,
-                stop_loss=sl_price,
-                target=tp_price,
-                signal_strength=strength
-            )
-            self.portfolio.add_position(position)
+             # Create position to track until exit date
+             position = Position(
+                 security=security,
+                 shares=shares,
+                 entry_price=entry_price,
+                 entry_date=signal.date,
+                 entry_index=signal.index,
+                 money_allocated=cost,
+                 stop_loss=sl_price,
+                 target=tp_price,
+                 signal_strength=strength
+             )
+             self.portfolio.add_position(position)
 
-            # Store exit info in position for later processing
-            position.exit_idx = exit_idx
-            position.exit_date = exit_date
-            position.exit_price = exit_price
-            position.pnl = pnl
-            position.proceeds = proceeds
-            position.outcome = outcome
-            position.is_long = is_long
-            position.cash_before = cash_before
+             # Store exit info in position for later processing
+             position.exit_idx = exit_idx
+             position.exit_date = df.index[exit_idx] if exit_idx < len(df.index) else None
+             position.exit_price = exit_price
+             position.pnl = pnl
+             position.proceeds = proceeds
+             position.outcome = outcome
+             position.is_long = is_long
+             position.cash_before = cash_before
 
-            return None  # Trade will be completed later
+             return None  # Trade will be completed later
 
-        # Position remains open (no exit hit within data range)
-        # Add to portfolio for tracking
+         # Position remains open (no exit hit within data range)
+         # Add to portfolio for tracking
         position = Position(
-            security=security,
-            shares=shares,
-            entry_price=entry_price,
-            entry_date=signal.date,
-            entry_index=signal.index,
-            money_allocated=cost,
-            stop_loss=sl_price,
-            target=tp_price,
-            signal_strength=strength
-        )
+             security=security,
+             shares=shares,
+             entry_price=entry_price,
+             entry_date=signal.date,
+             entry_index=signal.index,
+             money_allocated=cost,
+             stop_loss=sl_price,
+             target=tp_price,
+             signal_strength=strength
+         )
         self.portfolio.add_position(position)
 
         return None
@@ -238,26 +281,38 @@ class TradeAgent:
         sl_price: float,
         is_long: bool
     ) -> tuple:
-        """Simulate forward bars to find exit point."""
+        """Simulate forward bars to find exit point.
+
+        Returns (exit_price, exit_idx, outcome) where exit_idx is an integer index > entry_idx when an exit occurs.
+        If no exit is found, returns (None, None, OutcomeType.EXIT) to indicate position remains open.
+        """
         n = len(df)
 
-        for i in range(entry_idx + 1, n):
+        # No forward bars to inspect
+        if entry_idx is None or entry_idx >= n - 1:
+            return None, None, OutcomeType.EXIT
+
+        for i in range(int(entry_idx) + 1, n):
             high = df['High'].iat[i]
             low = df['Low'].iat[i]
 
             if is_long:
                 if high >= tp_price:
+                    logger.debug("TP hit at idx %s price %s", i, tp_price)
                     return tp_price, i, OutcomeType.WIN
                 if low <= sl_price:
+                    logger.debug("SL hit at idx %s price %s", i, sl_price)
                     return sl_price, i, OutcomeType.LOSS
             else:
                 if low <= tp_price:
+                    logger.debug("TP hit (short) at idx %s price %s", i, tp_price)
                     return tp_price, i, OutcomeType.WIN
                 if high >= sl_price:
+                    logger.debug("SL hit (short) at idx %s price %s", i, sl_price)
                     return sl_price, i, OutcomeType.LOSS
 
-        # No exit hit - position remains open
-        return 0.0, n - 1, OutcomeType.EXIT
+        # No exit hit - keep position open
+        return None, None, OutcomeType.EXIT
 
     def _process_pending_exits(self, current_date):
         """Process any positions that have exits scheduled before current date."""
@@ -274,12 +329,40 @@ class TradeAgent:
 
         # Process each exit
         for security, position in positions_to_exit:
+            # Defensive: ensure exit_date is after entry_date. If not, try to adjust to next bar.
+            try:
+                if position.exit_date is not None and position.entry_date is not None:
+                    if pd.to_datetime(position.exit_date) <= pd.to_datetime(position.entry_date):
+                        # try to adjust using entry_index + 1 if df is available through portfolio owner
+                        try:
+                            # portfolio may have reference to dataframe mapping via agent attribute
+                            df_map = getattr(self, '_df_mapping', None)
+                            if df_map and security in df_map:
+                                df_local = df_map[security]
+                                entry_idx = int(position.entry_index)
+                                if entry_idx + 1 < len(df_local.index):
+                                    new_idx = entry_idx + 1
+                                    position.exit_idx = new_idx
+                                    position.exit_date = df_local.index[new_idx]
+                                    position.exit_price = float(df_local['Close'].iat[new_idx]) if 'Close' in df_local.columns else float(df_local.iat[new_idx, -1])
+                                else:
+                                    # fallback: add one day to entry_date if it's a datetime
+                                    if hasattr(position.entry_date, 'to_pydatetime'):
+                                        position.exit_date = pd.to_datetime(position.entry_date) + pd.Timedelta(days=1)
+                        except Exception:
+                            # ignore adjustment errors and leave as-is
+                            pass
+            except Exception:
+                pass
+
             # Return cash from the exit
             if hasattr(position, 'is_long') and position.is_long:
                 self.cash += position.proceeds
+                logger.debug("Position %s closed; proceeds %s returned to cash", security, position.proceeds)
 
             # Update streaks
             self._update_streaks(position.pnl)
+            logger.debug("Position %s PnL %s updated streaks W:%s L:%s", security, position.pnl, self.winning_streak, self.losing_streak)
 
             # Create completed Trade object
             trade = Trade(
