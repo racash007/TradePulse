@@ -3,7 +3,6 @@ TradeAgent - Executes trades based on signals and tracks performance with Portfo
 """
 from typing import List, Optional
 import pandas as pd
-from typing_extensions import override
 import logging
 from app.ui.common import get_force_close_at_end
 
@@ -447,3 +446,43 @@ class PaperTradeAgent(Agent):
     def get_portfolio(self) -> Portfolio:
         """Return the current portfolio with open positions."""
         return self.portfolio
+
+    def force_close_open_positions(self, file_df_mapping: Optional[dict] = None) -> None:
+        """Force-close all open positions using the last available bar from the provided dataframes.
+
+        file_df_mapping: dict mapping security -> dataframe. If not provided, uses self._df_mapping if available.
+        This sets exit_idx, exit_date, exit_price, pnl, proceeds, outcome for each open position and
+        leaves actual finalization to _process_pending_exits.
+        """
+        df_map = file_df_mapping or getattr(self, '_df_mapping', None)
+        # compute last date per security if df_map given
+        for security, position in list(self.portfolio.positions.items()):
+            # only force-close positions that do not already have an exit
+            if hasattr(position, 'exit_idx') and position.exit_idx is not None:
+                continue
+            try:
+                if df_map and security in df_map:
+                    df_local = df_map[security]
+                    last_idx = len(df_local.index) - 1
+                    if last_idx >= 0:
+                        position.exit_idx = last_idx
+                        position.exit_date = df_local.index[last_idx]
+                        position.exit_price = float(df_local['Close'].iat[last_idx]) if 'Close' in df_local.columns else float(df_local.iat[last_idx, -1])
+                else:
+                    # no df available for this security; set exit_date to a sentinel (today) and use entry price as exit
+                    position.exit_idx = None
+                    position.exit_date = pd.Timestamp.now()
+                    position.exit_price = position.entry_price
+
+                # compute pnl and proceeds
+                if getattr(position, 'is_long', True):
+                    position.pnl = position.shares * (position.exit_price - position.entry_price)
+                    position.proceeds = position.shares * position.exit_price
+                else:
+                    position.pnl = position.shares * (position.entry_price - position.exit_price)
+                    position.proceeds = 0.0
+
+                # mark outcome as EXIT (forced)
+                position.outcome = OutcomeType.EXIT
+            except Exception as e:
+                logger.exception("Failed to force-close position %s: %s", security, e)

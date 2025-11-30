@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from app.model import Signal
-from app.ui.common import normalize_signals_to_df
+from app.ui.common import normalize_signals_to_df, get_force_close_at_end
 from app.utility.utility import load_data
 from app.ui.signal_utils import filter_buy_signals, format_trades_dates
+from app.utility.file_util import get_security_name
 
 def render_viewer(CSV_FILES, SignalGenerator, TradeAgent, fvg_plotter_fn, allocation_params, selected_file=None):
     st.header("Viewer")
@@ -84,6 +85,18 @@ def render_viewer(CSV_FILES, SignalGenerator, TradeAgent, fvg_plotter_fn, alloca
             except Exception as e:
                 st.error(f"Failed to execute signals: {e}")
                 return
+
+            # If force-close flag is enabled, force-close remaining open positions for this security
+            try:
+                if get_force_close_at_end():
+                    sec = get_security_name(file_name)
+                    ta.force_close_open_positions({sec: market_data_df})
+                    ta._process_pending_exits(market_data_df.index[-1])
+                    # refresh trades_df and summary
+                    trades_df = ta._trades_to_dataframe()
+                    summary = ta.get_summary()
+            except Exception:
+                pass
 
             if summary is not None:
                 st.subheader("Backtest Summary")

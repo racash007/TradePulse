@@ -241,6 +241,15 @@ def _execute_all_trades(
     # Use a far future date to ensure all exits are processed
     ta._process_pending_exits(pd.Timestamp.max)
 
+    # If force-close is enabled, force-close any remaining open positions using per-security dataframes
+    try:
+        if get_force_close_at_end():
+            ta.force_close_open_positions(file_dataframes)
+            # finalize forced closes
+            ta._process_pending_exits(pd.Timestamp.max)
+    except Exception:
+        pass
+
     # Calculate final results
     ta.final_balance = ta.cash + ta.portfolio.total_capital_used
     ta.final_pnl = ta.final_balance - ta.initial_capital
@@ -434,4 +443,3 @@ def _display_portfolio(portfolio):
             display_df[col] = display_df[col].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else '')
 
     st.dataframe(display_df, use_container_width=True)
-
