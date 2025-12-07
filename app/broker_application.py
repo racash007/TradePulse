@@ -3,7 +3,10 @@ import os
 from typing import List, Optional
 
 from app.agent.signal_generator import get_signal_generator
+from app.agent.trade_agent import TradeAgent
+from app.model import Signal
 from app.service.broker_service import BrokerConfig
+from app.utility.env_loader import load_project_env
 from app.utility.file_util import read_csv_into_df
 
 logger = logging.getLogger(__name__)
@@ -20,14 +23,12 @@ BACKTEST_CSV_FILES: List[str] = [f for f in os.listdir(BACKTEST_DATA_DIR) if f.e
 
 def run_executor_on_backtest_files(
     broker_config: Optional[BrokerConfig] = None,
-    dry_run: bool = True,
-    file_filter: Optional[str] = None,
+        file_filter: Optional[str] = None,
 ) -> None:
     """Run SignalGenerator for CSVs in the backtest directory and execute trades.
 
     Args:
         broker_config: BrokerConfig if live execution is desired. If None and dry_run False, BrokerService will not be used.
-        dry_run: if True, no real orders will be sent to broker.
         file_filter: optional substring to filter CSV filenames.
     """
     sg = get_signal_generator()
@@ -41,15 +42,16 @@ def run_executor_on_backtest_files(
         logger.warning("No backtest CSV files found in %s", BACKTEST_DATA_DIR)
         return
 
-    executor = TradeAgentExecutor(broker_config=broker_config, dry_run=dry_run)
+    executor = TradeAgent(broker_config=broker_config)
 
     for fname in csv_files:
         full_path = os.path.join(BACKTEST_DATA_DIR, fname)
         logger.info("Processing file %s", full_path)
         try:
             df = read_csv_into_df(full_path)
-            enhanced = sg.generate_from_file(df, fname)
-            trades_df = executor.execute_and_place(df, enhanced)
+            enhanced_all: List[Signal] = sg.generate_from_file(df, fname)
+            enhanced: List[Signal] = [enhanced_all[-1]] if enhanced_all else []
+            executor.execute_signals(df, enhanced)
             logger.info("Finished: %s produced %d trades", fname, len(executor.trades))
         except Exception:
             logger.exception("Failed processing %s", full_path)
@@ -62,15 +64,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run backtest signal generation and (optionally) execute trades via broker')
     parser.add_argument('--live', action='store_true', help='If set, attempt to place live orders using BrokerService (requires BrokerConfig in code)')
     parser.add_argument('--filter', type=str, default=None, help='Filter to select CSV file(s) containing this substring')
+    parser.add_argument('--env', type=str, default=None, help='Environment name to load config')
     args = parser.parse_args()
 
     # If you want to run live, construct BrokerConfig here or fetch from env/config
     broker_cfg = None
     if args.live:
         # Example: populate these from environment variables or secure config
-        broker_cfg = BrokerConfig(api_key=os.environ.get('KITE_API_KEY', ''), access_token=os.environ.get('KITE_ACCESS_TOKEN', ''))
+        load_project_env(args.env)
+        broker_cfg = BrokerConfig(api_key=os.environ.get('KITE_API_KEY', ''), access_token=os.environ.get('KITE_ACCESS_TOKEN', ''), redirect_uri=os.environ.get('KITE_REDIRECT_URI', ''))
         if not broker_cfg.api_key or not broker_cfg.access_token:
             logger.warning('Live mode requested but KITE_API_KEY or KITE_ACCESS_TOKEN not provided in environment; running dry-run instead')
             broker_cfg = None
 
-    run_executor_on_backtest_files(broker_config=broker_cfg, dry_run=(broker_cfg is None), file_filter=args.filter)
+    run_executor_on_backtest_files(broker_config=broker_cfg, file_filter=args.filter)

@@ -1,7 +1,7 @@
 """
 TradeAgent - Executes trades based on signals and tracks performance with Portfolio.
 """
-from typing import List, Optional
+from typing import List, Optional, override
 import pandas as pd
 import logging
 from app.ui.common import get_force_close_at_end
@@ -13,7 +13,7 @@ from app.model.trade import Trade, SignalStrength
 from app.model.trade_summary import TradeSummary
 from app.model.signal import Signal
 from app.model.portfolio import Portfolio, Position
-
+from app.utility.signal_util import is_long_signal, check_position_exit
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -58,7 +58,7 @@ class PaperTradeAgent(Agent):
         pct = self.allocation_step * strength
         return min(pct, 1.0)
 
-
+    @override
     def execute_signals(self, df: pd.DataFrame, enhanced_signals: List[Signal]) -> pd.DataFrame:
         """
         Execute trades based on enhanced signals and historical price data.
@@ -70,7 +70,7 @@ class PaperTradeAgent(Agent):
         signals = sorted(enhanced_signals, key=lambda s: s.date if s.date is not None else pd.Timestamp.min)
 
         # expose df mapping so _process_pending_exits can adjust dates if needed
-        self._df_mapping = {getattr(signal, 'symbol', 'unknown'): df for signal in signals}
+        self._df_mapping = {signal.symbol: df for signal in signals}
 
         for signal in signals:
             # Process any pending exits that occur before this signal's date
@@ -124,13 +124,13 @@ class PaperTradeAgent(Agent):
             return None
 
         security = signal.symbol
-        is_long = self._is_long_signal(signal.type)
+        is_long = is_long_signal(signal.type)
 
         # Check if we already have a position in this security
         if self.portfolio.has_position(security):
             # Check if this signal triggers an exit (stop loss or target)
             position = self.portfolio.get_position(security)
-            trade = self._check_position_exit(df, signal, position)
+            trade =check_position_exit(df, signal, position)
             if trade:
                 return trade
             # Otherwise, we already hold this security - skip buying more
@@ -244,23 +244,7 @@ class PaperTradeAgent(Agent):
 
         return None
 
-    def _check_position_exit(
-        self,
-        df: pd.DataFrame,
-        signal: Signal,
-        position: Position
-    ) -> Optional[Trade]:
-        """Check if current signal date triggers exit for existing position."""
-        # This would be used for real-time checking
-        # For backtesting, exits are handled in _simulate_exit
-        return None
 
-    def _is_long_signal(self, signal_type) -> bool:
-        """Determine if signal is a long (buy) signal."""
-        if hasattr(signal_type, 'value'):
-            return signal_type.value == 'buy'
-        type_str = str(signal_type).lower()
-        return 'buy' in type_str or 'bull' in type_str
 
     def _calculate_exit_prices(self, entry_price: float, is_long: bool) -> tuple:
         """Calculate target price and stop loss price."""

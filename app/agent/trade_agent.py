@@ -1,10 +1,10 @@
-from typing import Optional, List
 import logging
+from typing import Optional, List, override
 
 import pandas as pd
 
 from app.agent.paper_trade_agent import PaperTradeAgent
-from app.model import Trade, SignalType
+from app.model import Trade, SignalType, Signal
 from app.service.broker_service import BrokerService, BrokerConfig
 
 logger = logging.getLogger(__name__)
@@ -42,28 +42,30 @@ class TradeAgent(PaperTradeAgent):
         self.broker:BrokerService = BrokerService(self.broker_config)
             # If access token already provided in config, BrokerService.connect() will be called during init
 
-    def execute_and_place(self, df: pd.DataFrame, enhanced_signals: List) -> pd.DataFrame:
+    @override
+    def execute_signals(self, df: pd.DataFrame, enhanced_signals: List[Signal]) -> pd.DataFrame:
         """Run signal execution and optionally place orders for the completed trades.
-
         Args:
             df: OHLC DataFrame used for simulation (index is dates)
             enhanced_signals: list of Signal objects produced by SignalGenerator
-            place_on_exit: if True, place both entry and exit orders to mirror the completed trade
-
         Returns:
             DataFrame of executed trades (same as TradeAgent.execute_signals)
         """
-        # Run simulation (this populates self.trades)
-        trades_df = super().execute_signals(df, enhanced_signals)
+
+        # Sort signals chronologically by date
+        signals = sorted(enhanced_signals, key=lambda s: s.date if s.date is not None else pd.Timestamp.min)
 
         # If dry_run or no broker configured, only log
-        for trade in self.trades:
+        for signal in signals:
             try:
+                trade = Trade(signal)
+                if trade is not None:
+                    self.trades.append(trade)
                 self._place_trade_via_broker(trade)
             except Exception as exc:
                 logger.exception("Failed to place trade for %s: %s", getattr(trade, 'security', None), exc)
 
-        return trades_df
+        return self._trades_to_dataframe()
 
     def _place_trade_via_broker(self, trade: Trade, place_on_exit: bool = True) -> None:
         """Place entry (and optional exit) via BrokerService. Safe no-op if dry_run."""
@@ -75,7 +77,7 @@ class TradeAgent(PaperTradeAgent):
         # Place entry order
         try:
             resp_entry = self.broker.place_order(
-                tradingsymbol=trade.security,
+                security_symbol=trade.security,
                 exchange=self.exchange,
                 transaction_type=side.value(),
                 quantity=trade.shares,
@@ -93,7 +95,7 @@ class TradeAgent(PaperTradeAgent):
             # For simplicity, place a market exit immediately to mirror historical exit
             try:
                 resp_exit = self.broker.place_order(
-                    tradingsymbol=trade.security,
+                    security_symbol=trade.security,
                     exchange=self.exchange,
                     transaction_type=exit_txn,
                     quantity=trade.shares,

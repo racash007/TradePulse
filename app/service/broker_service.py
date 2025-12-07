@@ -153,7 +153,7 @@ class BrokerService:
     # Order operations
     def place_order(
         self,
-        tradingsymbol: str,
+        security_symbol: str,
         exchange: str,
         transaction_type: str,
         quantity: int,
@@ -168,7 +168,7 @@ class BrokerService:
         """Place an order and return Kite's response.
 
         Args:
-            tradingsymbol: symbol to trade (e.g., 'TCS').
+            security_symbol: symbol to trade (e.g., 'TCS').
             exchange: exchange string (e.g., 'NSE').
             transaction_type: 'BUY' or 'SELL'.
             quantity: integer number of shares.
@@ -185,7 +185,7 @@ class BrokerService:
         """
         client = self._ensure_client()
         payload: Dict[str, Any] = {
-            'tradingsymbol': tradingsymbol,
+            'tradingsymbol': security_symbol,
             'exchange': exchange,
             'transaction_type': transaction_type,
             'quantity': quantity,
