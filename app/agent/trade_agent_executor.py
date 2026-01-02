@@ -3,9 +3,9 @@ import logging
 
 import pandas as pd
 
-from app.agent.paper_trade_agent import PaperTradeAgent
-from app.model import Trade, SignalType
-from app.service.broker_service import BrokerService, BrokerConfig
+from agent.paper_trade_agent import PaperTradeAgent
+from model import Trade, SignalType
+from service.broker_service import BrokerService, BrokerConfig
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

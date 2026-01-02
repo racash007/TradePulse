@@ -2,7 +2,7 @@
 Signal processing utilities for extracting and normalizing signals from strategies.
 """
 from typing import List, Dict, Any, Tuple, Optional
-from app.model.signal import Signal
+from model.signal import Signal
 
 
 def normalize_raw_signal(s) -> Optional[Dict[str, Any]]:

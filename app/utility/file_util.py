@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from app.utility.utility import load_data
+from utility.utility import load_data
 
 
 def get_security_name(file_name: str) -> str:

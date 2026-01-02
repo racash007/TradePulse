@@ -3,7 +3,7 @@ from typing import Optional, List
 
 import pandas as pd
 
-from app.model.SignalType import SignalType
+from model.SignalType import SignalType
 
 
 @dataclass

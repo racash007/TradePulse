@@ -3,7 +3,7 @@ from typing import List
 
 import pandas as pd
 
-from app.model.signal import Signal
+from model.signal import Signal
 
 
 class Strategy(ABC):

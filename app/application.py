@@ -3,12 +3,12 @@ import os
 import matplotlib.pyplot as plt
 import streamlit as st
 from pandas import DataFrame
-from app.agent.signal_generator import SignalGenerator
-from app.agent.paper_trade_agent import PaperTradeAgent
-from app.strategy.fvgorderblocks import FVGOrderBlocks
-from app.strategy.sonarlaplaceorderblocks import SonarlaplaceOrderBlocks
-from app.ui.backtest import render_backtest
-from app.ui.viewer import render_viewer
+from agent.signal_generator import SignalGenerator
+from agent.paper_trade_agent import PaperTradeAgent
+from strategy.fvgorderblocks import FVGOrderBlocks
+from strategy.sonarlaplaceorderblocks import SonarlaplaceOrderBlocks
+from ui.backtest import render_backtest
+from ui.viewer import render_viewer
 
 # try alternative path if the file layout differs
 data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'resource', 'data')

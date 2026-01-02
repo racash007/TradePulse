@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pandas import DataFrame
 
-from app.model.box import Box, BoxType
-from app.model.signal import Signal
-from app.model.SignalType import SignalType
-from app.strategy.strategy import Strategy
-from app.utility.plot_utils import draw_candlesticks, draw_boxes, draw_signals, setup_chart_axes
-from app.utility.utility import atr_series, clamp
+from model.box import Box, BoxType
+from model.signal import Signal
+from model.SignalType import SignalType
+from strategy.strategy import Strategy
+from utility.plot_utils import draw_candlesticks, draw_boxes, draw_signals, setup_chart_axes
+from utility.utility import atr_series, clamp
 
 
 class FVGOrderBlocks(Strategy):

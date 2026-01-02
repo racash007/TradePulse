@@ -5,8 +5,8 @@ from typing import Optional
 
 import pandas as pd
 
-from app.model.OutcomeType import OutcomeType
-from app.model.SignalType import SignalType
+from model.OutcomeType import OutcomeType
+from model.SignalType import SignalType
 
 
 class SignalStrength(IntEnum):

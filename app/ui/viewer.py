@@ -2,11 +2,11 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from app.model import Signal
-from app.ui.common import normalize_signals_to_df, get_force_close_at_end
-from app.utility.utility import load_data
-from app.ui.signal_utils import filter_buy_signals, format_trades_dates
-from app.utility.file_util import get_security_name
+from model import Signal
+from ui.common import normalize_signals_to_df, get_force_close_at_end
+from utility.utility import load_data
+from ui.signal_utils import filter_buy_signals, format_trades_dates
+from utility.file_util import get_security_name
 
 def render_viewer(CSV_FILES, SignalGenerator, TradeAgent, fvg_plotter_fn, allocation_params, selected_file=None):
     st.header("Viewer")

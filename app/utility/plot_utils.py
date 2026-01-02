@@ -7,9 +7,9 @@ import matplotlib.dates as mdates
 from matplotlib.patches import Rectangle
 import pandas as pd
 
-from app.model.box import Box
-from app.model.signal import Signal
-from app.utility.utility import hex_to_rgba
+from model.box import Box
+from model.signal import Signal
+from utility.utility import hex_to_rgba
 
 
 def draw_candlesticks(ax, df: pd.DataFrame, bull_color: str = '#167F52', bear_color: str = '#C21919'):

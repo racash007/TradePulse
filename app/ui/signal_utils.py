@@ -4,8 +4,8 @@ Common signal filtering and processing utilities for UI components.
 from typing import List
 import pandas as pd
 
-from app.model.SignalType import SignalType
-from app.model.signal import Signal
+from model.SignalType import SignalType
+from model.signal import Signal
 
 
 def filter_buy_signals(signals: List[Signal]) -> List[Signal]:

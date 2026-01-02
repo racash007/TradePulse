@@ -16,17 +16,17 @@ Assumptions:
 from typing import List
 import pandas as pd
 
-from app.utility.file_util import get_security_name, read_csv_into_df
-from app.strategy.fvgorderblocks import FVGOrderBlocks
-from app.strategy.sonarlaplaceorderblocks import SonarlaplaceOrderBlocks
-from app.model.signal import Signal
-from app.agent.signal_processor import (
+from utility.file_util import get_security_name, read_csv_into_df
+from strategy.fvgorderblocks import FVGOrderBlocks
+from strategy.sonarlaplaceorderblocks import SonarlaplaceOrderBlocks
+from model.signal import Signal
+from agent.signal_processor import (
     normalize_raw_signal,
     is_buy_signal,
     run_all_strategies,
     collect_signals_from_strategies
 )
-from app.agent.signal_strength import (
+from agent.signal_strength import (
     calculate_signal_strength,
     check_fvg_inclusion,
     check_sonar_inclusion

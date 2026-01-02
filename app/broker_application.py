@@ -2,9 +2,9 @@ import logging
 import os
 from typing import List, Optional
 
-from app.agent.signal_generator import get_signal_generator
-from app.service.broker_service import BrokerConfig
-from app.utility.file_util import read_csv_into_df
+from agent.signal_generator import get_signal_generator
+from service.broker_service import BrokerConfig
+from utility.file_util import read_csv_into_df
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

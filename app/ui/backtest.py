@@ -7,12 +7,12 @@ from typing import List, Tuple, Optional, Any
 import pandas as pd
 import streamlit as st
 
-from app.model.signal import Signal
-from app.utility.utility import load_data
-from app.utility.file_util import get_security_name
-from app.agent.signal_generator import get_signal_generator
-from app.ui.signal_utils import filter_buy_signals, format_trades_dates, format_numeric_columns
-from app.ui.common import set_force_close_at_end, get_force_close_at_end
+from model.signal import Signal
+from utility.utility import load_data
+from utility.file_util import get_security_name
+from agent.signal_generator import get_signal_generator
+from ui.signal_utils import filter_buy_signals, format_trades_dates, format_numeric_columns
+from ui.common import set_force_close_at_end, get_force_close_at_end
 
 
 def render_backtest(CSV_FILES, TradeAgent, allocation_params):

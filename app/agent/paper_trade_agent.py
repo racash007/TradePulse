@@ -4,15 +4,15 @@ TradeAgent - Executes trades based on signals and tracks performance with Portfo
 from typing import List, Optional
 import pandas as pd
 import logging
-from app.ui.common import get_force_close_at_end
+from ui.common import get_force_close_at_end
 
-from app.agent.agent import Agent
-from app.model.OutcomeType import OutcomeType
-from app.model.SignalType import SignalType
-from app.model.trade import Trade, SignalStrength
-from app.model.trade_summary import TradeSummary
-from app.model.signal import Signal
-from app.model.portfolio import Portfolio, Position
+from agent.agent import Agent
+from model.OutcomeType import OutcomeType
+from model.SignalType import SignalType
+from model.trade import Trade, SignalStrength
+from model.trade_summary import TradeSummary
+from model.signal import Signal
+from model.portfolio import Portfolio, Position
 
 
 logger = logging.getLogger(__name__)
