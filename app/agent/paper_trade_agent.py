@@ -130,7 +130,7 @@ class PaperTradeAgent(Agent):
         if self.portfolio.has_position(security):
             # Check if this signal triggers an exit (stop loss or target)
             position = self.portfolio.get_position(security)
-            trade =check_position_exit(df, signal, position)
+            trade =check_position_exit(df ,signal, position)
             if trade:
                 return trade
             # Otherwise, we already hold this security - skip buying more

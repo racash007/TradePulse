@@ -7,7 +7,6 @@ from app.model.portfolio import Position
 
 
 def check_position_exit(
-        self,
         df: pd.DataFrame,
         signal: Signal,
         position: Position
@@ -18,7 +17,7 @@ def check_position_exit(
     return None
 
 
-def is_long_signal(self, signal_type) -> bool:
+def is_long_signal(signal_type) -> bool:
     """Determine if signal is a long (buy) signal."""
     if hasattr(signal_type, 'value'):
         return signal_type.value == 'buy'

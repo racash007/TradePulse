@@ -4,7 +4,7 @@ from typing import Optional, List, override
 import pandas as pd
 
 from app.agent.paper_trade_agent import PaperTradeAgent
-from app.model import Trade, SignalType, Signal
+from app.model import Trade, SignalType, Signal, OutcomeType, SignalStrength
 from app.service.broker_service import BrokerService, BrokerConfig
 
 logger = logging.getLogger(__name__)
@@ -57,14 +57,27 @@ class TradeAgent(PaperTradeAgent):
 
         # If dry_run or no broker configured, only log
         for signal in signals:
-            try:
-                trade = Trade(signal)
-                if trade is not None:
-                    self.trades.append(trade)
-                self._place_trade_via_broker(trade)
-            except Exception as exc:
-                logger.exception("Failed to place trade for %s: %s", getattr(trade, 'security', None), exc)
+            self.trades.append(Trade(
+                    entry_index=signal.index,
+                    entry_date=signal.date,
+                    exit_date=None,
+                    side=signal.type,
+                    entry_price=signal.price,
+                    exit_price=0.0,
+                    shares= int(self.cash * (signal.signalStrength / 5) // signal.price),
+                    security=signal.symbol,
+                    cash_after=self.cash - signal.price * (self.cash * (signal.signalStrength / 5) // signal.price),
+                    cash_before=self.cash,
+                    pnl=0,
+                    outcome=OutcomeType.EXIT,
+                    signalStrength=SignalStrength.NONE
+                ))
 
+        trade = self.trades[len(self.trades) - 1]
+        try:
+            self._place_trade_via_broker(trade)
+        except Exception as exc:
+                logger.exception("Failed to place trade for %s: %s", trade.security, exc)
         return self._trades_to_dataframe()
 
     def _place_trade_via_broker(self, trade: Trade, place_on_exit: bool = True) -> None:
@@ -79,7 +92,7 @@ class TradeAgent(PaperTradeAgent):
             resp_entry = self.broker.place_order(
                 security_symbol=trade.security,
                 exchange=self.exchange,
-                transaction_type=side.value(),
+                transaction_type=side,
                 quantity=trade.shares,
                 order_type='LIMIT',
                 product=self.product,
