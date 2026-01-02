@@ -2,8 +2,8 @@ from typing import Optional
 
 import pandas as pd
 
-from app.model import Trade, Signal
-from app.model.portfolio import Position
+from model import Trade, Signal
+from model.portfolio import Position
 
 
 def check_position_exit(

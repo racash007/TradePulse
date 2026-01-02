@@ -1,7 +1,7 @@
 """
 TradeAgent - Executes trades based on signals and tracks performance with Portfolio.
 """
-from typing import List, Optional, override
+from typing import List, Optional
 import pandas as pd
 import logging
 from ui.common import get_force_close_at_end
@@ -58,7 +58,6 @@ class PaperTradeAgent(Agent):
         pct = self.allocation_step * strength
         return min(pct, 1.0)
 
-    @override
     def execute_signals(self, df: pd.DataFrame, enhanced_signals: List[Signal]) -> pd.DataFrame:
         """
         Execute trades based on enhanced signals and historical price data.
