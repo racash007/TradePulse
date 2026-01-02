@@ -3,6 +3,7 @@ import os
 from typing import List, Optional
 
 from agent.signal_generator import get_signal_generator
+from agent.trade_agent_executor import TradeAgent
 from service.broker_service import BrokerConfig
 from utility.file_util import read_csv_into_df
 
@@ -41,7 +42,7 @@ def run_executor_on_backtest_files(
         logger.warning("No backtest CSV files found in %s", BACKTEST_DATA_DIR)
         return
 
-    executor = TradeAgentExecutor(broker_config=broker_config, dry_run=dry_run)
+    executor = TradeAgent(broker_config=broker_config, dry_run=dry_run)
 
     for fname in csv_files:
         full_path = os.path.join(BACKTEST_DATA_DIR, fname)
