@@ -1,10 +1,10 @@
-from typing import Optional, List
 import logging
+from typing import Optional, List, override
 
 import pandas as pd
 
 from agent.paper_trade_agent import PaperTradeAgent
-from model import Trade, SignalType
+from model import Trade, SignalType, Signal, OutcomeType, SignalStrength
 from service.broker_service import BrokerService, BrokerConfig
 
 logger = logging.getLogger(__name__)
@@ -42,28 +42,43 @@ class TradeAgent(PaperTradeAgent):
         self.broker:BrokerService = BrokerService(self.broker_config)
             # If access token already provided in config, BrokerService.connect() will be called during init
 
-    def execute_and_place(self, df: pd.DataFrame, enhanced_signals: List) -> pd.DataFrame:
+    @override
+    def execute_signals(self, df: pd.DataFrame, enhanced_signals: List[Signal]) -> pd.DataFrame:
         """Run signal execution and optionally place orders for the completed trades.
-
         Args:
             df: OHLC DataFrame used for simulation (index is dates)
             enhanced_signals: list of Signal objects produced by SignalGenerator
-            place_on_exit: if True, place both entry and exit orders to mirror the completed trade
-
         Returns:
             DataFrame of executed trades (same as TradeAgent.execute_signals)
         """
-        # Run simulation (this populates self.trades)
-        trades_df = super().execute_signals(df, enhanced_signals)
+
+        # Sort signals chronologically by date
+        signals = sorted(enhanced_signals, key=lambda s: s.date if s.date is not None else pd.Timestamp.min)
 
         # If dry_run or no broker configured, only log
-        for trade in self.trades:
-            try:
-                self._place_trade_via_broker(trade)
-            except Exception as exc:
-                logger.exception("Failed to place trade for %s: %s", getattr(trade, 'security', None), exc)
+        for signal in signals:
+            self.trades.append(Trade(
+                    entry_index=signal.index,
+                    entry_date=signal.date,
+                    exit_date=None,
+                    side=signal.type,
+                    entry_price=signal.price,
+                    exit_price=0.0,
+                    shares= int(self.cash * (signal.signalStrength / 5) // signal.price),
+                    security=signal.symbol,
+                    cash_after=self.cash - signal.price * (self.cash * (signal.signalStrength / 5) // signal.price),
+                    cash_before=self.cash,
+                    pnl=0,
+                    outcome=OutcomeType.EXIT,
+                    signalStrength=SignalStrength.NONE
+                ))
 
-        return trades_df
+        trade = self.trades[len(self.trades) - 1]
+        try:
+            self._place_trade_via_broker(trade)
+        except Exception as exc:
+                logger.exception("Failed to place trade for %s: %s", trade.security, exc)
+        return self._trades_to_dataframe()
 
     def _place_trade_via_broker(self, trade: Trade, place_on_exit: bool = True) -> None:
         """Place entry (and optional exit) via BrokerService. Safe no-op if dry_run."""
@@ -75,9 +90,9 @@ class TradeAgent(PaperTradeAgent):
         # Place entry order
         try:
             resp_entry = self.broker.place_order(
-                tradingsymbol=trade.security,
+                security_symbol=trade.security,
                 exchange=self.exchange,
-                transaction_type=side.value(),
+                transaction_type=side,
                 quantity=trade.shares,
                 order_type='LIMIT',
                 product=self.product,
@@ -93,7 +108,7 @@ class TradeAgent(PaperTradeAgent):
             # For simplicity, place a market exit immediately to mirror historical exit
             try:
                 resp_exit = self.broker.place_order(
-                    tradingsymbol=trade.security,
+                    security_symbol=trade.security,
                     exchange=self.exchange,
                     transaction_type=exit_txn,
                     quantity=trade.shares,

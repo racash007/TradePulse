@@ -18,6 +18,8 @@ class BrokerConfig:
         redirect_uri: Optional redirect URI used when generating login URL.
     """
     api_key: str
+    api_scret: str
+    request_token: Optional[str] = None
     access_token: Optional[str] = None
     redirect_uri: Optional[str] = None
 
@@ -39,15 +41,15 @@ class BrokerService:
         """
         self.config = config
         self.timeout = timeout
-        self._client: Optional[KiteConnect] = None
-        if KiteConnect is None:
-            logger.warning("kiteconnect library not available; broker methods will fail if used")
-
-        if self.config.access_token:
+        self._kite: Optional[KiteConnect] = None
+        if self.config.request_token and not self.config.access_token:
             try:
                 self.connect()
             except Exception as exc:  # avoid raising during import; user can call connect
                 logger.debug("Initial connect failed: %s", exc)
+        else:
+            login_url = self.generate_login_url()
+            print(login_url)
 
     # Connection / auth helpers
     def connect(self) -> None:
@@ -56,51 +58,36 @@ class BrokerService:
         Raises:
             RuntimeError: if kiteconnect library is not installed.
         """
-        if KiteConnect is None:
-            raise RuntimeError("kiteconnect library is required but not installed")
-
-        self._client = KiteConnect(api_key=self.config.api_key)
-        if self.config.access_token:
-            # attach access token
-            try:
-                self._client.set_access_token(self.config.access_token)
-            except Exception as exc:
-                logger.exception("Failed to set access token: %s", exc)
-                raise
+        try:
+            self._kite = KiteConnect(api_key=self.config.api_key)
+            data = self._kite.generate_session(self.config.request_token, api_secret=self.config.api_scret)
+            self.config.access_token = data['access_token']
+            if self.config.access_token:
+                # attach access token
+                try:
+                    self._kite.set_access_token(self.config.access_token)
+                except Exception as exc:
+                    logger.exception("Failed to set access token: %s", exc)
+                    raise
+        except Exception as exc:
+            logger.exception("Failed to get access token: %s", exc)
+            raise
 
     def generate_login_url(self) -> str:
         """Return the login URL where the user can obtain a request token.
-
-        The redirect URI must be configured in the Kite developer console and
-        optionally provided in the BrokerConfig. This method attempts to pass
-        the redirect URI if supported by the installed kiteconnect version and
-        falls back to calling without it.
         """
-        if KiteConnect is None:
-            raise RuntimeError("kiteconnect library is required but not installed")
         temp_client = KiteConnect(api_key=self.config.api_key)
-        if not self.config.redirect_uri:
-            return temp_client.login_url()
-        # some versions accept redirect_uri as positional or keyword; try both
-        try:
-            # try positional first
-            return temp_client.login_url(self.config.redirect_uri)
-        except TypeError:
-            try:
-                return temp_client.login_url(redirect_uri=self.config.redirect_uri)  # type: ignore[arg-type]
-            except Exception:
-                # final fallback
-                return temp_client.login_url()
-
+        return temp_client.login_url()
+        
     def _ensure_client(self) -> KiteConnect:
         """Ensure the KiteConnect client exists and return it.
 
         Raises:
             RuntimeError: if client is not connected yet.
         """
-        if self._client is None:
+        if self._kite is None:
             raise RuntimeError("KiteConnect client not initialized. Call connect() with a valid access token first.")
-        return self._client
+        return self._kite
 
     # Market / account helpers
     def instruments(self, exchange: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -153,7 +140,7 @@ class BrokerService:
     # Order operations
     def place_order(
         self,
-        tradingsymbol: str,
+        security_symbol: str,
         exchange: str,
         transaction_type: str,
         quantity: int,
@@ -168,7 +155,7 @@ class BrokerService:
         """Place an order and return Kite's response.
 
         Args:
-            tradingsymbol: symbol to trade (e.g., 'TCS').
+            security_symbol: symbol to trade (e.g., 'TCS').
             exchange: exchange string (e.g., 'NSE').
             transaction_type: 'BUY' or 'SELL'.
             quantity: integer number of shares.
@@ -185,7 +172,7 @@ class BrokerService:
         """
         client = self._ensure_client()
         payload: Dict[str, Any] = {
-            'tradingsymbol': tradingsymbol,
+            'tradingsymbol': security_symbol,
             'exchange': exchange,
             'transaction_type': transaction_type,
             'quantity': quantity,
@@ -202,7 +189,7 @@ class BrokerService:
         payload.update(kwargs)
 
         try:
-            response = client.place_order(**payload)
+            response = client.place_gtt(**payload)
             return response
         except Exception:
             logger.exception("Failed to place order: %s", {k: payload.get(k) for k in ('tradingsymbol', 'exchange', 'transaction_type', 'quantity')})
@@ -273,6 +260,3 @@ class BrokerService:
             logger.exception("Failed to fetch order history for %s", order_id)
             return {}
 
-
-# Backwards compatible alias for existing imports that used the lowercase name
-broker_service = BrokerService
