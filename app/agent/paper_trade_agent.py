@@ -25,7 +25,8 @@ class PaperTradeAgent(Agent):
         initial_capital: float = 100000.0,
         target_pct: float = 0.07,
         stop_loss_pct: float = 0.03,
-        allocation_step: float = 0.2
+        allocation_step: float = 0.2,
+        risk_reward_ratio: float = None
     ):
         self.final_pnl = 0
         self.final_balance = initial_capital
@@ -33,6 +34,11 @@ class PaperTradeAgent(Agent):
         self.target_pct = target_pct
         self.stop_loss_pct = stop_loss_pct
         self.allocation_step = allocation_step
+        # If risk_reward_ratio is set, it overrides target_pct
+        # risk_reward_ratio = target / stop_loss
+        self.risk_reward_ratio = risk_reward_ratio
+        if risk_reward_ratio is not None:
+            self.target_pct = stop_loss_pct * risk_reward_ratio
 
         # State
         self._reset_state()
@@ -302,9 +308,24 @@ class PaperTradeAgent(Agent):
         positions_to_exit = []
         for security, position in list(self.portfolio.positions.items()):
             if hasattr(position, 'exit_date') and position.exit_date is not None:
-                # Compare by date, not index
-                if current_date is None or position.exit_date <= current_date:
+                # Compare by date, handling timezone mismatches
+                if current_date is None:
                     positions_to_exit.append((security, position))
+                else:
+                    try:
+                        # Try direct comparison first
+                        if position.exit_date <= current_date:
+                            positions_to_exit.append((security, position))
+                    except TypeError:
+                        # Handle timezone mismatch by converting to tz-naive
+                        try:
+                            exit_date_naive = position.exit_date.tz_localize(None) if hasattr(position.exit_date, 'tz_localize') else position.exit_date
+                            current_date_naive = current_date.tz_localize(None) if hasattr(current_date, 'tz_localize') else current_date
+                            if exit_date_naive <= current_date_naive:
+                                positions_to_exit.append((security, position))
+                        except:
+                            # If all else fails, assume we should process the exit
+                            positions_to_exit.append((security, position))
 
         # Sort by exit date to process in chronological order
         positions_to_exit.sort(key=lambda x: x[1].exit_date)

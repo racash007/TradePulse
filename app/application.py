@@ -1,8 +1,11 @@
 import os
+import sqlite3
+from datetime import datetime, timedelta
 
 import matplotlib.pyplot as plt
 import streamlit as st
 from pandas import DataFrame
+import pandas as pd
 from agent.signal_generator import SignalGenerator
 from agent.paper_trade_agent import PaperTradeAgent
 from strategy.fvgorderblocks import FVGOrderBlocks
@@ -56,9 +59,25 @@ def run_streamlit_app():
     file_name = st.sidebar.selectbox("Select CSV file", options=CSV_FILES, index=0 if CSV_FILES else -1, key='main_file')
 
     st.sidebar.subheader("Backtest Parameters")
-    initial_capital = st.sidebar.number_input("Initial Capital", min_value=100.0, value=100000.0, step=100.0, format="%.2f")
-    target_pct = st.sidebar.slider("Target %", min_value=0.0, max_value=1.0, value=0.07, step=0.01, format="%.2f")
-    stop_loss_pct = st.sidebar.slider("Stop Loss %", min_value=0.0, max_value=1.0, value=0.03, step=0.01, format="%.2f")
+    
+    # Basic Parameters
+    initial_capital = st.sidebar.number_input("Initial Capital (₹)", min_value=100.0, value=100000.0, step=1000.0, format="%.2f")
+    
+    # Risk/Reward Configuration
+    st.sidebar.markdown("**Risk/Reward Settings**")
+    use_risk_reward_ratio = st.sidebar.checkbox("Use Risk-Reward Ratio", value=True, help="If checked, target is calculated from stop loss and ratio")
+    
+    if use_risk_reward_ratio:
+        risk_reward_ratio = st.sidebar.number_input("Risk-Reward Ratio", min_value=1.0, max_value=10.0, value=3.0, step=0.5, format="%.1f")
+        stop_loss_pct = st.sidebar.slider("Stop Loss %", min_value=0.01, max_value=0.20, value=0.03, step=0.01, format="%.2f")
+        target_pct = stop_loss_pct * risk_reward_ratio
+        st.sidebar.info(f"Target %: {target_pct:.2%} (calculated)")
+    else:
+        target_pct = st.sidebar.slider("Target %", min_value=0.01, max_value=0.50, value=0.09, step=0.01, format="%.2f")
+        stop_loss_pct = st.sidebar.slider("Stop Loss %", min_value=0.01, max_value=0.20, value=0.03, step=0.01, format="%.2f")
+        risk_reward_ratio = target_pct / stop_loss_pct if stop_loss_pct > 0 else 0
+        st.sidebar.info(f"Risk-Reward Ratio: {risk_reward_ratio:.2f} (calculated)")
+    
     allocation_step = st.sidebar.slider("Allocation per Strength Unit (fraction)", min_value=0.01, max_value=1.0, value=0.2, step=0.01, format="%.2f")
 
     tabs = st.tabs(["Viewer", "Back Test"])
@@ -68,7 +87,8 @@ def run_streamlit_app():
         'initial_capital': initial_capital,
         'target_pct': target_pct,
         'stop_loss_pct': stop_loss_pct,
-        'allocation_step': allocation_step
+        'allocation_step': allocation_step,
+        'risk_reward_ratio': risk_reward_ratio if use_risk_reward_ratio else None
     }
 
     # render viewer/backtest inside tabs

@@ -4,4 +4,11 @@ streamlit
 numpy
 matplotlib
 flask[async]>=2.2
+smartapi-python
+pyotp
+requests
+scipy
+logzero
+python-dotenv
+websocket-client
 

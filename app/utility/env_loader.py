@@ -41,3 +41,14 @@ def load_project_env(env_filename: str) -> None:
             logger.debug("No .env found at %s", env_path)
     except Exception:
         logger.exception("Failed loading environment file")
+
+
+def load_env():
+    """Load environment variables from .env file in project root."""
+    project_root = Path(__file__).parent.parent.parent
+    env_path = project_root / '.env'
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
+        logger.debug("Loaded env from: %s", env_path)
+    else:
+        logger.warning("No .env file found at: %s", env_path)

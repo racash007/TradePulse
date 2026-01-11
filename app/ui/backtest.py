@@ -3,6 +3,8 @@ Backtest UI component for running strategy backtests.
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple, Optional, Any
+import sqlite3
+from datetime import datetime, timedelta
 
 import pandas as pd
 import streamlit as st
@@ -13,10 +15,315 @@ from utility.file_util import get_security_name
 from agent.signal_generator import get_signal_generator
 from ui.signal_utils import filter_buy_signals, format_trades_dates, format_numeric_columns
 from ui.common import set_force_close_at_end, get_force_close_at_end
+from ui.optimizer import BacktestOptimizer
+from strategy.fvgorderblocks import FVGOrderBlocks
+
+
+def load_symbols_from_db(db_path='resource/stock_data.db'):
+    """Load available symbols from database."""
+    try:
+        conn = sqlite3.connect(db_path)
+        query = """
+            SELECT DISTINCT symbol, COUNT(*) as count
+            FROM stock_data
+            GROUP BY symbol
+            HAVING count >= 100
+            ORDER BY symbol
+        """
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        return df['symbol'].tolist()
+    except Exception as e:
+        st.error(f"Error loading symbols from database: {e}")
+        return []
+
+
+def load_data_from_db(symbol, db_path='resource/stock_data.db', start_date=None, end_date=None):
+    """Load OHLCV data for a symbol from database."""
+    try:
+        conn = sqlite3.connect(db_path)
+        
+        query = """
+            SELECT datetime, open, high, low, close, volume
+            FROM stock_data
+            WHERE symbol = ?
+        """
+        params = [symbol]
+        
+        if start_date:
+            query += " AND datetime >= ?"
+            params.append(start_date.strftime('%Y-%m-%d'))
+        
+        if end_date:
+            query += " AND datetime <= ?"
+            params.append(end_date.strftime('%Y-%m-%d'))
+        
+        query += " ORDER BY datetime"
+        
+        df = pd.read_sql_query(query, conn, params=params)
+        conn.close()
+        
+        if not df.empty:
+            df['datetime'] = pd.to_datetime(df['datetime'])
+            # Remove timezone info to avoid comparison issues
+            if hasattr(df['datetime'].dt, 'tz') and df['datetime'].dt.tz is not None:
+                df['datetime'] = df['datetime'].dt.tz_localize(None)
+            df.set_index('datetime', inplace=True)
+            df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+        
+        return df
+    except Exception as e:
+        st.error(f"Error loading data for {symbol}: {e}")
+        return pd.DataFrame()
 
 
 def render_backtest(CSV_FILES, TradeAgent, allocation_params):
     """Render the backtest UI and execute backtests."""
+    st.subheader("Backtest Configuration")
+    
+    # Data source selection
+    data_source = st.radio("Data Source", ["CSV Files", "Database"], horizontal=True)
+    
+    if data_source == "Database":
+        _render_database_backtest(TradeAgent, allocation_params)
+    else:
+        _render_csv_backtest(CSV_FILES, TradeAgent, allocation_params)
+
+
+def _render_database_backtest(TradeAgent, allocation_params):
+    """Render database-based backtest UI."""
+    db_path = st.text_input("Database Path", value="resource/stock_data.db")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Date range selection
+        st.markdown("**Date Range**")
+        use_all_data = st.checkbox("Use all available data", value=True)
+        
+        if not use_all_data:
+            start_date = st.date_input("Start Date", value=datetime.now() - timedelta(days=365))
+            end_date = st.date_input("End Date", value=datetime.now())
+        else:
+            start_date = None
+            end_date = None
+    
+    with col2:
+        # Symbol selection
+        st.markdown("**Symbol Selection**")
+        symbols = load_symbols_from_db(db_path)
+        
+        if symbols:
+            st.info(f"Found {len(symbols)} symbols in database")
+            use_all_symbols = st.checkbox("Test all symbols", value=False)
+            
+            if not use_all_symbols:
+                selected_symbols = st.multiselect("Select symbols", options=symbols, default=symbols[:5])
+            else:
+                selected_symbols = symbols
+        else:
+            st.error("No symbols found in database")
+            return
+    
+    # Optimization mode
+    st.markdown("**Backtest Mode**")
+    mode = st.radio("Mode", ["Single Run", "Optimize Parameters"], horizontal=True)
+    
+    if mode == "Optimize Parameters":
+        _render_optimizer_ui(TradeAgent, allocation_params, selected_symbols, db_path, start_date, end_date)
+    else:
+        # Checkbox to toggle forced close
+        force_close = st.checkbox("Force close open positions at end of data", value=get_force_close_at_end())
+        set_force_close_at_end(bool(force_close))
+        
+        if st.button("Run Backtest"):
+            with st.spinner(f"Running backtest on {len(selected_symbols)} symbols..."):
+                _run_database_backtest(selected_symbols, db_path, start_date, end_date, TradeAgent, allocation_params)
+
+
+def _render_optimizer_ui(TradeAgent, allocation_params, selected_symbols, db_path, start_date, end_date):
+    """Render optimizer configuration UI."""
+    st.markdown("**Parameter Ranges to Test**")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("*Risk-Reward Ratios*")
+        rr_min = st.number_input("Min RR", min_value=1.0, max_value=10.0, value=1.8, step=0.1)
+        rr_max = st.number_input("Max RR", min_value=1.0, max_value=10.0, value=5.0, step=0.1)
+        rr_step = st.number_input("RR Step", min_value=0.1, max_value=2.0, value=0.5, step=0.1)
+        
+    with col2:
+        st.markdown("*Stop Loss %*")
+        sl_values = st.multiselect("Stop Loss %", options=[0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08], default=[0.03, 0.04, 0.05])
+        
+    with col3:
+        st.markdown("*Allocation Steps*")
+        alloc_values = st.multiselect("Allocation Steps", options=[0.10, 0.15, 0.20, 0.25, 0.30], default=[0.15, 0.20, 0.25])
+    
+    # Calculate parameter combinations
+    import numpy as np
+    rr_ratios = list(np.arange(rr_min, rr_max + rr_step/2, rr_step))
+    total_combinations = len(rr_ratios) * len(sl_values) * len(alloc_values)
+    
+    st.info(f"Will test **{total_combinations}** parameter combinations on **{len(selected_symbols)}** symbols")
+    st.warning(f"Estimated time: ~{total_combinations * 0.5:.0f} seconds ({total_combinations * 0.5 / 60:.1f} minutes)")
+    
+    force_close = st.checkbox("Force close open positions at end of data", value=True)
+    set_force_close_at_end(bool(force_close))
+    
+    if st.button("Run Optimization", type="primary"):
+        param_ranges = {
+            'risk_reward_ratio': rr_ratios,
+            'stop_loss_pct': sl_values,
+            'allocation_step': alloc_values,
+            'initial_capital': [allocation_params.get('initial_capital', 100000.0)]
+        }
+        
+        with st.spinner(f"Running optimization... This may take several minutes."):
+            _run_optimizer(selected_symbols, db_path, start_date, end_date, TradeAgent, param_ranges)
+
+
+def _run_optimizer(selected_symbols, db_path, start_date, end_date, TradeAgent, param_ranges):
+    """Run backtest optimizer."""
+    # Load data for all symbols
+    data_dict = {}
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for i, symbol in enumerate(selected_symbols):
+        status_text.text(f"Loading data: {symbol} ({i+1}/{len(selected_symbols)})")
+        df = load_data_from_db(symbol, db_path, start_date, end_date)
+        if not df.empty:
+            data_dict[symbol] = df
+        progress_bar.progress((i + 1) / len(selected_symbols))
+    
+    if not data_dict:
+        st.error("No data loaded for selected symbols")
+        return
+    
+    status_text.text(f"Loaded data for {len(data_dict)} symbols. Starting optimization...")
+    
+    # Run optimization
+    sg = get_signal_generator()
+    optimizer = BacktestOptimizer(
+        data_dict=data_dict,
+        strategy_class=FVGOrderBlocks,
+        trade_agent_class=TradeAgent,
+        signal_generator=sg
+    )
+    
+    results_df = optimizer.optimize(param_ranges=param_ranges, metric='total_pnl', max_workers=1)
+    
+    progress_bar.empty()
+    status_text.empty()
+    
+    # Display results
+    st.success("Optimization complete!")
+    
+    st.markdown("### Top 10 Parameter Combinations")
+    display_cols = [
+        'risk_reward_ratio', 'stop_loss_pct', 'allocation_step',
+        'total_pnl', 'total_return_pct', 'win_rate', 'profit_factor',
+        'total_trades', 'max_drawdown_pct', 'sharpe_ratio'
+    ]
+    display_cols = [col for col in display_cols if col in results_df.columns]
+    
+    st.dataframe(results_df.head(10)[display_cols], use_container_width=True)
+    
+    # Best parameters
+    best = results_df.iloc[0]
+    st.markdown("### Best Parameters")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("Risk-Reward Ratio", f"{best.get('risk_reward_ratio', 0):.2f}")
+        st.metric("Stop Loss %", f"{best.get('stop_loss_pct', 0):.2%}")
+        st.metric("Allocation Step", f"{best.get('allocation_step', 0):.2f}")
+    
+    with col2:
+        st.metric("Total P&L", f"₹{best.get('total_pnl', 0):,.2f}")
+        st.metric("Total Return", f"{best.get('total_return_pct', 0):.2f}%")
+        st.metric("Win Rate", f"{best.get('win_rate', 0):.2f}%")
+    
+    with col3:
+        st.metric("Profit Factor", f"{best.get('profit_factor', 0):.2f}")
+        st.metric("Total Trades", f"{best.get('total_trades', 0):.0f}")
+        st.metric("Max Drawdown", f"{best.get('max_drawdown_pct', 0):.2f}%")
+    
+    # Download results
+    csv = results_df.to_csv(index=False)
+    st.download_button(
+        label="Download Full Results (CSV)",
+        data=csv,
+        file_name=f"optimization_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+        mime="text/csv"
+    )
+
+
+def _run_database_backtest(selected_symbols, db_path, start_date, end_date, TradeAgent, allocation_params):
+    """Run backtest using database data."""
+    # Load data for all symbols
+    data_dict = {}
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for i, symbol in enumerate(selected_symbols):
+        status_text.text(f"Loading data: {symbol} ({i+1}/{len(selected_symbols)})")
+        df = load_data_from_db(symbol, db_path, start_date, end_date)
+        if not df.empty:
+            data_dict[symbol] = df
+        progress_bar.progress((i + 1) / len(selected_symbols))
+    
+    if not data_dict:
+        st.error("No data loaded for selected symbols")
+        return
+    
+    status_text.text("Generating signals...")
+    
+    # Generate signals
+    sg = get_signal_generator()
+    all_signals = []
+    
+    for i, (symbol, df) in enumerate(data_dict.items()):
+        status_text.text(f"Generating signals: {symbol} ({i+1}/{len(data_dict)})")
+        try:
+            signals = sg.generate_from_file(df, symbol)
+            all_signals.extend(signals)
+        except Exception as e:
+            st.warning(f"Error generating signals for {symbol}: {e}")
+    
+    progress_bar.empty()
+    status_text.empty()
+    
+    if not all_signals:
+        st.info("No signals generated")
+        return
+    
+    # Filter and sort signals
+    filtered_signals = filter_buy_signals(all_signals)
+    
+    if not filtered_signals:
+        st.info("No BUY signals with non-zero strength found")
+        return
+    
+    filtered_signals = sorted(
+        filtered_signals,
+        key=lambda s: s.date if s.date is not None else pd.Timestamp.min
+    )
+    
+    # Execute trades
+    with st.spinner("Executing trades..."):
+        trades_df, summary, portfolio = _execute_all_trades(
+            filtered_signals, data_dict, TradeAgent, allocation_params
+        )
+    
+    # Display results
+    _display_results(summary, trades_df, portfolio)
+
+
+def _render_csv_backtest(CSV_FILES, TradeAgent, allocation_params):
+    """Render CSV-based backtest UI."""
     # Checkbox to toggle forced close of open positions at end of data
     try:
         default_force = get_force_close_at_end()
@@ -239,14 +546,24 @@ def _execute_all_trades(
 
     # Process any remaining pending exits (for positions that close after last signal)
     # Use a far future date to ensure all exits are processed
-    ta._process_pending_exits(pd.Timestamp.max)
+    # Get timezone from data if available to avoid comparison errors
+    try:
+        sample_df = next(iter(file_dataframes.values()))
+        if hasattr(sample_df.index, 'tz') and sample_df.index.tz is not None:
+            max_timestamp = pd.Timestamp.max.tz_localize(sample_df.index.tz)
+        else:
+            max_timestamp = pd.Timestamp.max
+    except:
+        max_timestamp = pd.Timestamp.max
+    
+    ta._process_pending_exits(max_timestamp)
 
     # If force-close is enabled, force-close any remaining open positions using per-security dataframes
     try:
         if get_force_close_at_end():
             ta.force_close_open_positions(file_dataframes)
             # finalize forced closes
-            ta._process_pending_exits(pd.Timestamp.max)
+            ta._process_pending_exits(max_timestamp)
     except Exception:
         pass
 
