@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pandas as pd
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent / 'app'))
+# Add app directory to path for imports
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from service.angel_data_downloader import AngelDataDownloader
 from service.database_manager import DatabaseManager

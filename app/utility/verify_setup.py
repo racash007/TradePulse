@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Add app to path
-sys.path.insert(0, str(Path(__file__).parent / 'app'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 def test_imports():
     """Test that all required modules can be imported."""
@@ -84,7 +84,7 @@ def test_env_file():
     import os
     from pathlib import Path
     
-    env_path = Path(__file__).parent / '.env'
+    env_path = Path(__file__).resolve().parents[2] / '.env'
     if not env_path.exists():
         print("✗ .env file not found")
         return False
@@ -188,7 +188,7 @@ def main():
     if all_passed:
         print("✓ ALL TESTS PASSED - Setup is complete!")
         print("\nYou can now run:")
-        print("  python run_backtest_optimizer.py")
+        print("  python app/utility/run_backtest_optimizer.py")
     else:
         print("✗ SOME TESTS FAILED - Please fix the issues above")
         return 1
