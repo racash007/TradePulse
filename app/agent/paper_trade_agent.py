@@ -26,7 +26,8 @@ class PaperTradeAgent(Agent):
         target_pct: float = 0.07,
         stop_loss_pct: float = 0.03,
         allocation_step: float = 0.2,
-        risk_reward_ratio: float = None
+        risk_reward_ratio: float = None,
+        compound_capital: bool = False
     ):
         self.final_pnl = 0
         self.final_balance = initial_capital
@@ -34,6 +35,7 @@ class PaperTradeAgent(Agent):
         self.target_pct = target_pct
         self.stop_loss_pct = stop_loss_pct
         self.allocation_step = allocation_step
+        self.compound_capital = compound_capital
         # If risk_reward_ratio is set, it overrides target_pct
         # risk_reward_ratio = target / stop_loss
         self.risk_reward_ratio = risk_reward_ratio
@@ -156,7 +158,11 @@ class PaperTradeAgent(Agent):
         """Open a new position."""
         # Calculate position size based on available cash
         pct = self.allocation_pct(strength)
-        alloc_amount = self.cash * pct
+        base_capital = self.cash if self.compound_capital else self.initial_capital
+        alloc_amount = base_capital * pct
+        # Never allocate more than current available cash
+        if alloc_amount > self.cash:
+            alloc_amount = self.cash
 
         # For long positions, check we have enough cash
         if is_long:

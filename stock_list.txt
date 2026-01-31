@@ -1,0 +1,25 @@
+Banking & Financial Services
+HDFC Bank, ICICI Bank, Axis Bank, Kotak Mahindra Bank, IndusInd Bank, Federal Bank, IDFC First Bank, Bandhan Bank, AU Small Finance Bank, Yes Bank
+State Bank of India, Bank of Baroda, Canara Bank, PNB, Union Bank of India, Indian Bank, Bank of India
+Bajaj Finance, Bajaj Finserv, Chola Investment, Shriram Finance, M&M Financial, Muthoot Finance, LIC Housing Finance, L&T Finance, Angel One, BSE Ltd, CDSL, CAMS
+
+Information Technology
+TCS, Infosys, Wipro, HCL Tech, Tech Mahindra, LTIMindtree, Mphasis, Persistent Systems, Coforge, Tata Elxsi, KPIT Tech, Tata Technologies
+
+Automobiles & Auto Components
+Tata Motors, Maruti Suzuki, Mahindra & Mahindra, Eicher Motors, Bajaj Auto, Hero MotoCorp, TVS Motor, Ashok Leyland, Bosch, Samvardhana Motherson, MRF, Apollo Tyres, JK Tyre, UNO Minda
+
+Energy, Oil & Gas
+Reliance Industries, ONGC, BPCL, IOC, HPCL, GAIL, Petronet LNG, Oil India, Adani Total Gas, NTPC, Power Grid, Tata Power, JSW Energy, Adani Power, NHPC, IREDA
+
+Pharmaceuticals & Healthcare
+Sun Pharma, Dr. Reddy's, Cipla, Apollo Hospitals, Divi's Lab, Aurobindo Pharma, Lupin, Glenmark, Biocon, Granules India, Syngene, Max Healthcare, Piramal Pharma
+
+Metal, Mining & Commodities
+Tata Steel, JSW Steel, Hindalco, Vedanta, Jindal Steel, NMDC, Coal India, National Aluminium, Hindustan Zinc, Sail
+
+Consumer Goods & Retail
+ITC, Hindustan Unilever, Nestle India, Britannia, Tata Consumer, Asian Paints, Berger Paints, Pidilite, Titan Company, Avenue Supermarts, Zomato, Trent, Swiggy
+
+Infrastructure, Realty & Cement
+Larsen & Toubro, DLF, Godrej Properties, Oberoi Realty, Macrotech Developers, UltraTech Cement, Grasim, Ambuja Cement, ACC, Shree Cement, Dalmia Bharat, NBCC
