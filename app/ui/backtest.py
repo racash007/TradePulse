@@ -1,6 +1,7 @@
 """
 Backtest UI component for running strategy backtests.
 """
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple, Optional, Any
 import sqlite3
@@ -8,19 +9,32 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import streamlit as st
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 from model.signal import Signal
-from utility.utility import load_data
+from model import SignalType, Box
+from utility.utility import load_data, atr_series
 from utility.file_util import get_security_name
 from agent.signal_generator import get_signal_generator
 from ui.signal_utils import filter_buy_signals, format_trades_dates, format_numeric_columns
 from ui.common import set_force_close_at_end, get_force_close_at_end
 from ui.optimizer import BacktestOptimizer
 from strategy.fvgorderblocks import FVGOrderBlocks
+from strategy.sonarlaplaceorderblocks import SonarlaplaceOrderBlocks
+from utility.plot_utils import draw_candlesticks, draw_boxes, draw_signals, setup_chart_axes
+
+# Absolute path to the stock database (project_root/resource/stock_data.db)
+_DEFAULT_DB_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    'resource', 'stock_data.db',
+)
 
 
-def load_symbols_from_db(db_path='resource/stock_data.db'):
+def load_symbols_from_db(db_path=None):
     """Load available symbols from database."""
+    if db_path is None:
+        db_path = _DEFAULT_DB_PATH
     try:
         conn = sqlite3.connect(db_path)
         query = """
@@ -38,8 +52,10 @@ def load_symbols_from_db(db_path='resource/stock_data.db'):
         return []
 
 
-def load_data_from_db(symbol, db_path='resource/stock_data.db', start_date=None, end_date=None):
+def load_data_from_db(symbol, db_path=None, start_date=None, end_date=None):
     """Load OHLCV data for a symbol from database."""
+    if db_path is None:
+        db_path = _DEFAULT_DB_PATH
     try:
         conn = sqlite3.connect(db_path)
         
@@ -77,7 +93,7 @@ def load_data_from_db(symbol, db_path='resource/stock_data.db', start_date=None,
         return pd.DataFrame()
 
 
-def render_backtest(CSV_FILES, TradeAgent, allocation_params):
+def render_backtest(CSV_FILES, TradeAgent, allocation_params, min_signal_strength: int = 1):
     """Render the backtest UI and execute backtests."""
     st.subheader("Backtest Configuration")
     
@@ -85,14 +101,14 @@ def render_backtest(CSV_FILES, TradeAgent, allocation_params):
     data_source = st.radio("Data Source", ["CSV Files", "Database"], horizontal=True)
     
     if data_source == "Database":
-        _render_database_backtest(TradeAgent, allocation_params)
+        _render_database_backtest(TradeAgent, allocation_params, min_signal_strength)
     else:
-        _render_csv_backtest(CSV_FILES, TradeAgent, allocation_params)
+        _render_csv_backtest(CSV_FILES, TradeAgent, allocation_params, min_signal_strength)
 
 
-def _render_database_backtest(TradeAgent, allocation_params):
+def _render_database_backtest(TradeAgent, allocation_params, min_signal_strength: int):
     """Render database-based backtest UI."""
-    db_path = st.text_input("Database Path", value="resource/stock_data.db")
+    db_path = st.text_input("Database Path", value=_DEFAULT_DB_PATH)
     
     col1, col2 = st.columns(2)
     
@@ -138,7 +154,25 @@ def _render_database_backtest(TradeAgent, allocation_params):
         
         if st.button("Run Backtest"):
             with st.spinner(f"Running backtest on {len(selected_symbols)} symbols..."):
-                _run_database_backtest(selected_symbols, db_path, start_date, end_date, TradeAgent, allocation_params)
+                results = _run_database_backtest(selected_symbols, db_path, start_date, end_date, TradeAgent, allocation_params, min_signal_strength)
+                if results:
+                    summary, trades_df, portfolio, data_dict = results
+                    st.session_state['backtest_results'] = {
+                        'summary': summary,
+                        'trades_df': trades_df,
+                        'portfolio': portfolio,
+                        'data_dict': data_dict
+                    }
+
+        # Display last results (persisted across reruns)
+        if 'backtest_results' in st.session_state:
+            stored = st.session_state.get('backtest_results') or {}
+            _display_results(
+                stored.get('summary'),
+                stored.get('trades_df'),
+                stored.get('portfolio'),
+                stored.get('data_dict')
+            )
 
 
 def _render_optimizer_ui(TradeAgent, allocation_params, selected_symbols, db_path, start_date, end_date):
@@ -261,7 +295,7 @@ def _run_optimizer(selected_symbols, db_path, start_date, end_date, TradeAgent, 
     )
 
 
-def _run_database_backtest(selected_symbols, db_path, start_date, end_date, TradeAgent, allocation_params):
+def _run_database_backtest(selected_symbols, db_path, start_date, end_date, TradeAgent, allocation_params, min_signal_strength: int) -> Optional[Tuple[Any, pd.DataFrame, Any, dict]]:
     """Run backtest using database data."""
     # Load data for all symbols
     data_dict = {}
@@ -277,7 +311,7 @@ def _run_database_backtest(selected_symbols, db_path, start_date, end_date, Trad
     
     if not data_dict:
         st.error("No data loaded for selected symbols")
-        return
+        return None
     
     status_text.text("Generating signals...")
     
@@ -298,14 +332,14 @@ def _run_database_backtest(selected_symbols, db_path, start_date, end_date, Trad
     
     if not all_signals:
         st.info("No signals generated")
-        return
+        return None
     
     # Filter and sort signals
-    filtered_signals = filter_buy_signals(all_signals)
+    filtered_signals = filter_buy_signals(all_signals, min_signal_strength)
     
     if not filtered_signals:
         st.info("No BUY signals with non-zero strength found")
-        return
+        return None
     
     filtered_signals = sorted(
         filtered_signals,
@@ -319,10 +353,10 @@ def _run_database_backtest(selected_symbols, db_path, start_date, end_date, Trad
         )
     
     # Display results
-    _display_results(summary, trades_df, portfolio)
+    return summary, trades_df, portfolio, data_dict
 
 
-def _render_csv_backtest(CSV_FILES, TradeAgent, allocation_params):
+def _render_csv_backtest(CSV_FILES, TradeAgent, allocation_params, min_signal_strength: int):
     """Render CSV-based backtest UI."""
     # Checkbox to toggle forced close of open positions at end of data
     try:
@@ -359,14 +393,32 @@ def _render_csv_backtest(CSV_FILES, TradeAgent, allocation_params):
     if st.button("Run Backtest"):
         with st.spinner("Running backtest..."):
             # pass filtered_files (if none selected, fall back to original CSV_FILES)
-            _run_backtest(filtered_files or CSV_FILES, TradeAgent, allocation_params)
+            results = _run_backtest(filtered_files or CSV_FILES, TradeAgent, allocation_params, min_signal_strength)
+            if results:
+                summary, trades_df, portfolio, data_dict = results
+                st.session_state['backtest_results'] = {
+                    'summary': summary,
+                    'trades_df': trades_df,
+                    'portfolio': portfolio,
+                    'data_dict': data_dict
+                }
+
+    # Display last results (persisted across reruns)
+    if 'backtest_results' in st.session_state:
+        stored = st.session_state.get('backtest_results') or {}
+        _display_results(
+            stored.get('summary'),
+            stored.get('trades_df'),
+            stored.get('portfolio'),
+            stored.get('data_dict')
+        )
 
 
-def _run_backtest(CSV_FILES: List[str], TradeAgent, allocation_params: dict):
+def _run_backtest(CSV_FILES: List[str], TradeAgent, allocation_params: dict, min_signal_strength: int) -> Optional[Tuple[Any, pd.DataFrame, Any, dict]]:
     """Execute the backtest logic."""
     if not CSV_FILES:
         st.error("No CSV files provided.")
-        return
+        return None
 
     # Use singleton SignalGenerator
     sg = get_signal_generator()
@@ -376,7 +428,7 @@ def _run_backtest(CSV_FILES: List[str], TradeAgent, allocation_params: dict):
 
     if not results:
         st.error("No valid data was loaded.")
-        return
+        return None
 
     # Combine results
     all_signals = []
@@ -388,14 +440,14 @@ def _run_backtest(CSV_FILES: List[str], TradeAgent, allocation_params: dict):
 
     if not all_signals:
         st.info("No signals were generated.")
-        return
+        return None
 
     # Filter signals - only BUY signals with non-zero strength
-    filtered_signals = filter_buy_signals(all_signals)
+    filtered_signals = filter_buy_signals(all_signals, min_signal_strength)
 
     if not filtered_signals:
         st.info("No BUY signals with non-zero strength found.")
-        return
+        return None
 
     # Sort signals by date (chronological order across all securities)
     filtered_signals = sorted(
@@ -408,8 +460,8 @@ def _run_backtest(CSV_FILES: List[str], TradeAgent, allocation_params: dict):
         filtered_signals, file_dataframes, TradeAgent, allocation_params
     )
 
-    # Display results
-    _display_results(summary, trades_df, portfolio)
+    # Return results for persisted display
+    return summary, trades_df, portfolio, file_dataframes
 
 
 def _process_files_parallel(
@@ -607,7 +659,97 @@ def _find_matching_dataframe(security: str, file_dataframes: dict) -> Optional[p
     return None  # type: ignore[return-value]
 
 
-def _display_results(summary, trades_df: pd.DataFrame, portfolio=None):
+def _index_from_date(df: pd.DataFrame, date_value) -> int | None:
+    if date_value is None or (isinstance(date_value, float) and pd.isna(date_value)):
+        return None
+    try:
+        ts = pd.to_datetime(date_value)
+    except Exception:
+        return None
+    try:
+        if ts in df.index:
+            return int(df.index.get_loc(ts))
+        idx = df.index.get_indexer([ts], method='nearest')[0]
+        return int(idx) if idx >= 0 else None
+    except Exception:
+        return None
+
+
+def _subset_boxes(boxes: list[Box], start_idx: int, end_idx: int) -> list[Box]:
+    sliced: list[Box] = []
+    for box in boxes or []:
+        if box.right < start_idx or box.left > end_idx:
+            continue
+        new_left = max(box.left, start_idx) - start_idx
+        new_right = min(box.right, end_idx) - start_idx
+        sliced.append(Box(
+            left=new_left,
+            right=new_right,
+            top=box.top,
+            bottom=box.bottom,
+            box_type=box.box_type,
+            alpha=box.alpha,
+            border_color=box.border_color,
+            bg_color=box.bg_color,
+            border_width=box.border_width,
+            broken=box.broken,
+            percent=box.percent,
+            created_at=box.created_at
+        ))
+    return sliced
+
+
+def _build_trade_signals(entry_idx: int | None, exit_idx: int | None, entry_price: float | None,
+                         exit_price: float | None, trade_side) -> list[Signal]:
+    signals: list[Signal] = []
+    if entry_idx is not None and entry_price is not None:
+        entry_type = SignalType.BUY if str(trade_side).lower() == 'buy' else SignalType.SELL
+        signals.append(Signal(
+            index=entry_idx,
+            price=float(entry_price),
+            date=None,
+            type=entry_type,
+            symbol='E',
+            color='#1f77b4',
+            inside_fvg=False,
+            inside_sonar=False,
+            fvg_alpha=None,
+            signalStrength=0,
+            source_strategy=['TradeEntry']
+        ))
+    if exit_idx is not None and exit_price is not None:
+        exit_type = SignalType.SELL if str(trade_side).lower() == 'buy' else SignalType.BUY
+        signals.append(Signal(
+            index=exit_idx,
+            price=float(exit_price),
+            date=None,
+            type=exit_type,
+            symbol='X',
+            color='#ff7f0e',
+            inside_fvg=False,
+            inside_sonar=False,
+            fvg_alpha=None,
+            signalStrength=0,
+            source_strategy=['TradeExit']
+        ))
+    return signals
+
+
+def _get_df_for_trade(security: str, data_dict: dict) -> Optional[pd.DataFrame]:
+    if not security or not data_dict:
+        return None
+    if security in data_dict:
+        return data_dict[security]
+    for key, df in data_dict.items():
+        try:
+            if security in str(key):
+                return df
+        except Exception:
+            continue
+    return None
+
+
+def _display_results(summary, trades_df: pd.DataFrame, portfolio=None, data_dict: Optional[dict] = None):
     """Display backtest results in Streamlit."""
     if summary is not None:
         st.subheader("Backtest Summary")
@@ -627,6 +769,131 @@ def _display_results(summary, trades_df: pd.DataFrame, portfolio=None):
 
         # Show summary statistics
         _show_trade_statistics(trades_df)
+
+        if data_dict:
+            st.subheader("Trade Visualizations")
+            show_trade_charts = st.checkbox("Show trade visualizations", value=False, key="bt_show_trade_viz")
+            if show_trade_charts:
+                bars_padding = st.slider(
+                    "Bars before/after trade",
+                    min_value=10,
+                    max_value=250,
+                    value=60,
+                    step=10,
+                    key="bt_bars_padding"
+                )
+                max_trades = st.number_input(
+                    "Max trades to render",
+                    min_value=1,
+                    max_value=100,
+                    value=20,
+                    step=1,
+                    key="bt_max_trades"
+                )
+
+                strat_cache: dict = {}
+                atr_cache: dict = {}
+                for sec_key, df in data_dict.items():
+                    try:
+                        if df is None or df.empty:
+                            continue
+                        fvg = FVGOrderBlocks()
+                        fvg.run(df)
+                        sonar = SonarlaplaceOrderBlocks()
+                        sonar.run(df)
+                        strat_cache[sec_key] = (fvg, sonar)
+                        atr_cache[sec_key] = atr_series(df, period=14)
+                    except Exception:
+                        continue
+
+                trades_to_render = trades_df.head(int(max_trades))
+                for trade_num, (_, trade_row) in enumerate(trades_to_render.iterrows(), start=1):
+                    security = trade_row.get('security')
+                    df = _get_df_for_trade(security, data_dict)
+                    if df is None or df.empty:
+                        continue
+
+                    entry_idx = None
+                    if 'entry_index' in trade_row and pd.notna(trade_row['entry_index']):
+                        try:
+                            entry_idx = int(trade_row['entry_index'])
+                        except Exception:
+                            entry_idx = None
+                    if entry_idx is None:
+                        entry_idx = _index_from_date(df, trade_row.get('entry_date'))
+
+                    exit_idx = _index_from_date(df, trade_row.get('exit_date'))
+
+                    if entry_idx is None and exit_idx is None:
+                        continue
+
+                    entry_price = trade_row.get('entry_price')
+                    exit_price = trade_row.get('exit_price')
+                    if entry_price is not None and pd.isna(entry_price):
+                        entry_price = None
+                    if exit_price is not None and pd.isna(exit_price):
+                        exit_price = None
+                    trade_side = trade_row.get('side')
+
+                    trade_start = entry_idx if entry_idx is not None else exit_idx
+                    trade_end = exit_idx if exit_idx is not None else entry_idx
+                    if trade_start is None or trade_end is None:
+                        continue
+
+                    total_rows = len(df)
+                    start_idx = max(0, min(trade_start, trade_end) - bars_padding)
+                    end_idx = min(total_rows - 1, max(trade_start, trade_end) + bars_padding)
+                    df_slice = df.iloc[start_idx:end_idx + 1]
+
+                    entry_local = entry_idx - start_idx if entry_idx is not None else None
+                    exit_local = exit_idx - start_idx if exit_idx is not None else None
+
+                    signals = _build_trade_signals(entry_local, exit_local, entry_price, exit_price, trade_side)
+
+                    fvg_boxes = []
+                    sonar_boxes = []
+                    for key, (fvg, sonar) in strat_cache.items():
+                        try:
+                            if security == key or security in str(key):
+                                fvg_boxes = _subset_boxes(
+                                    (fvg.bull_boxes or []) + (fvg.bear_boxes or []),
+                                    start_idx,
+                                    end_idx
+                                )
+                                sonar_boxes = _subset_boxes(
+                                    (sonar.long_boxes or []) + (sonar.short_boxes or []),
+                                    start_idx,
+                                    end_idx
+                                )
+                                break
+                        except Exception:
+                            continue
+
+                    with st.expander(f"Trade {trade_num} ({security})"):
+                        fig, (ax_price, ax_atr) = plt.subplots(
+                            2,
+                            1,
+                            figsize=(14, 8),
+                            sharex=True,
+                            gridspec_kw={'height_ratios': [3, 1]}
+                        )
+
+                        draw_candlesticks(ax_price, df_slice)
+                        draw_boxes(ax_price, fvg_boxes, list(df_slice.index))
+                        draw_boxes(ax_price, sonar_boxes, list(df_slice.index))
+                        draw_signals(ax_price, signals, list(df_slice.index))
+                        setup_chart_axes(ax_price, title=f"Trade {trade_num} ({trade_side})")
+
+                        atr_full = atr_cache.get(security)
+                        if atr_full is None:
+                            atr_full = next(iter(atr_cache.values()), None)
+                        if atr_full is not None:
+                            atr_slice = atr_full.iloc[start_idx:end_idx + 1]
+                            ax_atr.plot([mdates.date2num(d) for d in df_slice.index], atr_slice.values, color='#6a51a3', linewidth=1.2)
+                        ax_atr.set_ylabel("ATR(14)")
+                        ax_atr.grid(True, linestyle='--', linewidth=0.5, alpha=0.4)
+
+                        st.pyplot(fig)
 
     # Display open positions (portfolio)
     if portfolio is not None:

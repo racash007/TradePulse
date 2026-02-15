@@ -11,6 +11,7 @@ from agent.paper_trade_agent import PaperTradeAgent
 from strategy.fvgorderblocks import FVGOrderBlocks
 from strategy.sonarlaplaceorderblocks import SonarlaplaceOrderBlocks
 from ui.backtest import render_backtest
+from ui.data_download import render_data_download
 from ui.viewer import render_viewer
 
 # try alternative path if the file layout differs
@@ -80,7 +81,10 @@ def run_streamlit_app():
     
     allocation_step = st.sidebar.slider("Allocation per Strength Unit (fraction)", min_value=0.01, max_value=1.0, value=0.2, step=0.01, format="%.2f")
 
-    tabs = st.tabs(["Viewer", "Back Test"])
+    st.sidebar.subheader("Signal Filter")
+    min_signal_strength = st.sidebar.slider("Min Signal Strength", min_value=1, max_value=4, value=1, step=1)
+
+    tabs = st.tabs(["Viewer", "Back Test", "Data Download"])
 
     # prepare allocation params
     allocation_params = {
@@ -93,10 +97,13 @@ def run_streamlit_app():
 
     # render viewer/backtest inside tabs
     with tabs[0]:
-        render_viewer(CSV_FILES=CSV_FILES, SignalGenerator=SignalGenerator, TradeAgent=PaperTradeAgent, fvg_plotter_fn=plot_both_strategies_on_ax, allocation_params=allocation_params, selected_file=file_name)
+        render_viewer(CSV_FILES=CSV_FILES, SignalGenerator=SignalGenerator, TradeAgent=PaperTradeAgent, fvg_plotter_fn=plot_both_strategies_on_ax, allocation_params=allocation_params, selected_file=file_name, min_signal_strength=min_signal_strength)
 
     with tabs[1]:
-        render_backtest(CSV_FILES=BACK_TEST_CSV_FILES, TradeAgent=PaperTradeAgent, allocation_params=allocation_params)
+        render_backtest(CSV_FILES=BACK_TEST_CSV_FILES, TradeAgent=PaperTradeAgent, allocation_params=allocation_params, min_signal_strength=min_signal_strength)
+
+    with tabs[2]:
+        render_data_download()
 
  
 

@@ -8,11 +8,11 @@ from model.SignalType import SignalType
 from model.signal import Signal
 
 
-def filter_buy_signals(signals: List[Signal]) -> List[Signal]:
-    """Filter signals to only include BUY signals with non-zero strength."""
+def filter_buy_signals(signals: List[Signal], min_strength: int = 1) -> List[Signal]:
+    """Filter signals to only include BUY signals with strength >= min_strength."""
     return [
         s for s in signals
-        if s.signalStrength and s.signalStrength > 0 and s.type == SignalType.BUY
+        if s.signalStrength and s.signalStrength >= min_strength and s.type == SignalType.BUY
     ]
 
 
