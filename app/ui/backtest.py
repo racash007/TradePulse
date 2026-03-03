@@ -580,6 +580,13 @@ def _execute_all_trades(
     # Store DataFrame mapping for position exit processing
     ta._df_mapping = file_dataframes
 
+    # Apply agent-level signal prioritization rules (e.g., 3:20 PM same-day tie-breakers)
+    try:
+        if hasattr(ta, 'prepare_signals_for_execution'):
+            signals = ta.prepare_signals_for_execution(signals)
+    except Exception:
+        pass
+
     # Process each signal in chronological order
     for signal in signals:
         # Find the matching DataFrame for this signal's security

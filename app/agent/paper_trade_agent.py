@@ -50,6 +50,7 @@ class PaperTradeAgent(Agent):
         self.cash = self.initial_capital
         self.trades: List[Trade] = []
         self.portfolio = Portfolio()
+        self._daily_allocated: dict = {}
         self.winning_streak = 0
         self.losing_streak = 0
         self.max_winning_streak = 0
@@ -60,11 +61,99 @@ class PaperTradeAgent(Agent):
         self.final_balance = self.initial_capital
 
     def allocation_pct(self, strength: int) -> float:
-        """Calculate allocation percentage based on signal strength (capped at 100%)."""
+        """Calculate allocation percentage based on signal strength.
+
+        Business rule:
+        - strength 1 -> 15%
+        - strength 2 -> 20%
+        - strength 3 -> 25%
+        - strength 4+ -> 30%
+        """
         if strength is None or strength <= 0:
             return 0.0
-        pct = self.allocation_step * strength
-        return min(pct, 1.0)
+        if strength <= 1:
+            return 0.15
+        if strength == 2:
+            return 0.20
+        if strength == 3:
+            return 0.25
+        return 0.30
+
+    def _capital_base_for_allocation(self) -> float:
+        """Capital base used for position sizing.
+
+        Allocation is limited to INR 1,00,000 or trader's deployed initial capital,
+        whichever is lower.
+        """
+        return min(float(self.initial_capital), 100000.0)
+
+    def _get_signal_day_key(self, signal_date) -> Optional[pd.Timestamp]:
+        """Normalize signal date to day key for daily allocation tracking."""
+        if signal_date is None:
+            return None
+        try:
+            ts = pd.to_datetime(signal_date)
+            if pd.isna(ts):
+                return None
+            return pd.Timestamp(ts).normalize()
+        except Exception:
+            return None
+
+    def prepare_signals_for_execution(self, signals: List[Signal]) -> List[Signal]:
+        """Apply pre-execution prioritization rules to signals.
+
+        Rule: when multiple signals occur on the same date at 3:30 PM,
+        keep only the highest-price stock signal for entry.
+
+        For daily-granularity datasets (timestamps without intraday time),
+        this rule is skipped.
+        """
+        if not signals:
+            return []
+
+        # Daily-granularity data generally has midnight timestamps.
+        # In that case we should not apply intraday 3:30 PM prioritization.
+        parsed_times = []
+        for s in signals:
+            try:
+                ts = pd.to_datetime(getattr(s, 'date', None))
+                if ts is not None and not pd.isna(ts):
+                    parsed_times.append((ts.hour, ts.minute, ts.second))
+            except Exception:
+                pass
+
+        if parsed_times and all(h == 0 and m == 0 and sec == 0 for h, m, sec in parsed_times):
+            return sorted(signals, key=lambda s: s.date if s.date is not None else pd.Timestamp.min)
+
+        non_eod_signals: List[Signal] = []
+        eod_by_day = {}
+
+        for s in signals:
+            try:
+                ts = pd.to_datetime(getattr(s, 'date', None))
+            except Exception:
+                ts = None
+
+            if ts is not None and not pd.isna(ts) and ts.hour == 15 and ts.minute == 30:
+                day_key = ts.date()
+                eod_by_day.setdefault(day_key, []).append(s)
+            else:
+                non_eod_signals.append(s)
+
+        selected_eod: List[Signal] = []
+        for day_signals in eod_by_day.values():
+            chosen = max(
+                day_signals,
+                key=lambda x: (
+                    float(getattr(x, 'price', 0.0) or 0.0),
+                    int(getattr(x, 'signalStrength', 0) or 0),
+                    str(getattr(x, 'symbol', '') or '')
+                )
+            )
+            selected_eod.append(chosen)
+
+        combined = non_eod_signals + selected_eod
+        return sorted(combined, key=lambda s: s.date if s.date is not None else pd.Timestamp.min)
 
     def execute_signals(self, df: pd.DataFrame, enhanced_signals: List[Signal]) -> pd.DataFrame:
         """
@@ -75,6 +164,7 @@ class PaperTradeAgent(Agent):
 
         # Sort signals chronologically by date
         signals = sorted(enhanced_signals, key=lambda s: s.date if s.date is not None else pd.Timestamp.min)
+        signals = self.prepare_signals_for_execution(signals)
 
         # expose df mapping so _process_pending_exits can adjust dates if needed
         self._df_mapping = {signal.symbol: df for signal in signals}
@@ -158,8 +248,17 @@ class PaperTradeAgent(Agent):
         """Open a new position."""
         # Calculate position size based on available cash
         pct = self.allocation_pct(strength)
-        base_capital = self.cash if self.compound_capital else self.initial_capital
+        base_capital = self._capital_base_for_allocation()
         alloc_amount = base_capital * pct
+
+        # Enforce per-day total deployment cap across all symbols:
+        # max deployment for a day = min(initial_capital, 1 lakh)
+        day_key = self._get_signal_day_key(signal.date)
+        if day_key is not None:
+            deployed_today = float(self._daily_allocated.get(day_key, 0.0))
+            remaining_today = max(0.0, base_capital - deployed_today)
+            alloc_amount = min(alloc_amount, remaining_today)
+
         # Never allocate more than current available cash
         if alloc_amount > self.cash:
             alloc_amount = self.cash
@@ -236,6 +335,10 @@ class PaperTradeAgent(Agent):
              position.is_long = is_long
              position.cash_before = cash_before
 
+             # Track per-day capital deployment (counting entry notional)
+             if day_key is not None:
+                 self._daily_allocated[day_key] = float(self._daily_allocated.get(day_key, 0.0)) + float(cost)
+
              return None  # Trade will be completed later
 
          # Position remains open (no exit hit within data range)
@@ -252,6 +355,10 @@ class PaperTradeAgent(Agent):
              signal_strength=strength
          )
         self.portfolio.add_position(position)
+
+        # Track per-day capital deployment (counting entry notional)
+        if day_key is not None:
+            self._daily_allocated[day_key] = float(self._daily_allocated.get(day_key, 0.0)) + float(cost)
 
         return None
 
@@ -338,29 +445,79 @@ class PaperTradeAgent(Agent):
 
         # Process each exit
         for security, position in positions_to_exit:
-            # Defensive: ensure exit_date is after entry_date. If not, try to adjust to next bar.
+            # Defensive: keep exit_date aligned to exit_idx when available.
+            # Avoid synthetic calendar-date adjustments that can create date/price mismatches.
             try:
-                if position.exit_date is not None and position.entry_date is not None:
-                    if pd.to_datetime(position.exit_date) <= pd.to_datetime(position.entry_date):
-                        # try to adjust using entry_index + 1 if df is available through portfolio owner
+                df_map = getattr(self, '_df_mapping', None)
+                if df_map and security in df_map:
+                    df_local = df_map[security]
+
+                    # Keep date in sync with explicit exit index if present.
+                    if hasattr(position, 'exit_idx') and position.exit_idx is not None:
                         try:
-                            # portfolio may have reference to dataframe mapping via agent attribute
-                            df_map = getattr(self, '_df_mapping', None)
-                            if df_map and security in df_map:
-                                df_local = df_map[security]
-                                entry_idx = int(position.entry_index)
-                                if entry_idx + 1 < len(df_local.index):
-                                    new_idx = entry_idx + 1
-                                    position.exit_idx = new_idx
-                                    position.exit_date = df_local.index[new_idx]
-                                    position.exit_price = float(df_local['Close'].iat[new_idx]) if 'Close' in df_local.columns else float(df_local.iat[new_idx, -1])
-                                else:
-                                    # fallback: add one day to entry_date if it's a datetime
-                                    if hasattr(position.entry_date, 'to_pydatetime'):
-                                        position.exit_date = pd.to_datetime(position.entry_date) + pd.Timedelta(days=1)
+                            exit_idx = int(position.exit_idx)
+                            if 0 <= exit_idx < len(df_local.index):
+                                position.exit_date = df_local.index[exit_idx]
                         except Exception:
-                            # ignore adjustment errors and leave as-is
                             pass
+
+                    # If exit index is somehow not strictly after entry index, try to move to next bar.
+                    # This should be rare and only a safety guard.
+                    if hasattr(position, 'exit_idx') and position.exit_idx is not None and position.entry_index is not None:
+                        try:
+                            entry_idx = int(position.entry_index)
+                            exit_idx = int(position.exit_idx)
+                            if exit_idx <= entry_idx and entry_idx + 1 < len(df_local.index):
+                                new_idx = entry_idx + 1
+                                position.exit_idx = new_idx
+                                position.exit_date = df_local.index[new_idx]
+                                # Preserve simulated TP/SL price for WIN/LOSS outcomes.
+                                if (position.exit_price is None) or (position.outcome == OutcomeType.EXIT):
+                                    position.exit_price = float(df_local['Close'].iat[new_idx]) if 'Close' in df_local.columns else float(df_local.iat[new_idx, -1])
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
+            # Validate that WIN/LOSS exits are actually reachable on the recorded exit bar.
+            # If not, clear the pending exit and keep the position open for future processing.
+            try:
+                if (
+                    hasattr(position, 'exit_idx') and position.exit_idx is not None
+                    and position.exit_price is not None
+                    and position.outcome in [OutcomeType.WIN, OutcomeType.LOSS]
+                ):
+                    df_map = getattr(self, '_df_mapping', None)
+                    if df_map and security in df_map:
+                        df_local = df_map[security]
+                        exit_idx = int(position.exit_idx)
+                        if 0 <= exit_idx < len(df_local.index):
+                            high = float(df_local['High'].iat[exit_idx])
+                            low = float(df_local['Low'].iat[exit_idx])
+                            is_long = getattr(position, 'is_long', True)
+                            px = float(position.exit_price)
+                            eps = 1e-9
+
+                            is_reachable = True
+                            if is_long:
+                                if position.outcome == OutcomeType.WIN:
+                                    is_reachable = high + eps >= px
+                                elif position.outcome == OutcomeType.LOSS:
+                                    is_reachable = low - eps <= px
+                            else:
+                                if position.outcome == OutcomeType.WIN:
+                                    is_reachable = low - eps <= px
+                                elif position.outcome == OutcomeType.LOSS:
+                                    is_reachable = high + eps >= px
+
+                            if not is_reachable:
+                                # Inconsistent exit metadata (often from mismatched dataframe).
+                                # Keep position open and let future bars / forced close resolve it.
+                                position.exit_idx = None
+                                position.exit_date = None
+                                position.exit_price = None
+                                position.outcome = OutcomeType.EXIT
+                                continue
             except Exception:
                 pass
 

@@ -53,3 +53,37 @@ def test_force_close_closes_open_positions():
         # restore previous flag state
         set_force_close_at_end(prev)
 
+
+def test_force_close_single_bar_keeps_same_day_exit_date_and_price():
+    # Single-bar dataset: entry and forced exit must both be on the same real bar.
+    df = make_df([
+        (100, 101, 99, 100),
+    ])
+
+    sig = Signal(
+        index=0,
+        price=100.0,
+        date=df.index[0],
+        type=SignalType.BUY,
+        symbol='TEST',
+        color=None,
+        inside_fvg=False,
+        inside_sonar=False,
+        fvg_alpha=None,
+        signalStrength=1,
+        source_strategy=['test']
+    )
+
+    prev = get_force_close_at_end()
+    set_force_close_at_end(True)
+    try:
+        ta = PaperTradeAgent(initial_capital=10000)
+        trades_df = ta.execute_signals(df, [sig])
+        assert not trades_df.empty
+        row = trades_df.iloc[0]
+        assert pd.to_datetime(row['entry_date']) == df.index[0]
+        assert pd.to_datetime(row['exit_date']) == df.index[0]
+        assert row['exit_price'] == float(df['Close'].iat[0])
+    finally:
+        set_force_close_at_end(prev)
+

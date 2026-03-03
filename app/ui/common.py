@@ -4,8 +4,8 @@ from pandas import DataFrame
 
 # shared helpers for UI modules
 
-# default: do not force close open positions at end of data
-_FORCE_CLOSE_AT_END = False
+# default: force close open positions at end of data
+_FORCE_CLOSE_AT_END = True
 
 
 def set_force_close_at_end(enabled: bool) -> None:
