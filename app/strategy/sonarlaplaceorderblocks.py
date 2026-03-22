@@ -209,7 +209,7 @@ class SonarlaplaceOrderBlocks(Strategy):
             if df['High'].iat[idx] > sbox.bottom and self.sell_alert:
                 self.signals.append(Signal(
                     index=idx,
-                    price=df['High'].iat[idx],
+                    price=df['Close'].iat[idx],
                     date=None,
                     type=SignalType.SELL,
                     symbol="\u2193",
@@ -240,7 +240,7 @@ class SonarlaplaceOrderBlocks(Strategy):
             if df['Low'].iat[idx] < lbox.top and self.buy_alert:
                 self.signals.append(Signal(
                     index=idx,
-                    price=df['Low'].iat[idx],
+                    price=df['Close'].iat[idx],
                     date=None,
                     type=SignalType.BUY,
                     symbol="\u2191",

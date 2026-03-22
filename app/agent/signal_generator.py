@@ -83,6 +83,10 @@ class SignalGenerator:
 
         return enhanced
 
+    def generate_signals(self, df: pd.DataFrame, symbol: str) -> List[Signal]:
+        """Alias for generate_from_file for compatibility with optimizer."""
+        return self.generate_from_file(df, symbol)
+
     def _process_raw_signals(self, raw_signals: List, df: pd.DataFrame, file_name: str) -> List[Signal]:
         """Process raw signals and create enhanced Signal objects."""
         enhanced = []

@@ -1,7 +1,0 @@
-pytest
-pandas
-streamlit
-numpy
-matplotlib
-flask[async]>=2.2
-

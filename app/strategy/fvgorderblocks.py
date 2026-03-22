@@ -241,8 +241,8 @@ class FVGOrderBlocks(Strategy):
             if self.show_signal and idx >= 1:
                 if (df['Low'].iat[idx] > box.top >= df['Low'].shift(1).iat[idx] and not isBull_gap):
                     self.signals.append(Signal(
-                        index=idx - 1,
-                        price=df['Low'].shift(1).iat[idx],
+                        index=idx,
+                        price=df['Close'].iat[idx],
                         date=None,
                         type=SignalType.BUY,
                         symbol="\ufe3d",
@@ -275,8 +275,8 @@ class FVGOrderBlocks(Strategy):
             if self.show_signal and idx >= 1:
                 if (df['High'].iat[idx] < box.bottom <= df['High'].shift(1).iat[idx] and not isBear_gap):
                     self.signals.append(Signal(
-                        index=idx - 1,
-                        price=df['High'].shift(1).iat[idx],
+                        index=idx,
+                        price=df['Close'].iat[idx],
                         date=None,
                         type=SignalType.SELL,
                         symbol="\ufe40",
